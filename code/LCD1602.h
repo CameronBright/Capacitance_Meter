@@ -1,16 +1,25 @@
-#ifndef __LCD1602_H__
-#define __LCD1602_H__
+#ifndef _LCD1602_H_
+#define _LCD1602_H_
+
+//#include<reg52.h>
+#include <STC12C5A60S2.H>
+#include<intrins.h>
+
+#include"Delay.h"
+
+#define DATA P0
 
 sbit LED1 = P2^2;
 
-//用户调用函数：
+sbit RS = P2^7;
+sbit RW = P2^6;
+sbit EN = P2^5;
+
 void LCD_Init();
-void LCD_ShowChar(unsigned char Line,unsigned char Column,char Char);
-void LCD_ShowString(unsigned char Line,unsigned char Column,char *String);
-void LCD_ShowNum(unsigned char Line,unsigned char Column,unsigned int Number,unsigned char Length);
-void LCD_ShowSignedNum(unsigned char Line,unsigned char Column,int Number,unsigned char Length);
-void LCD_ShowHexNum(unsigned char Line,unsigned char Column,unsigned int Number,unsigned char Length);
-void LCD_ShowBinNum(unsigned char Line,unsigned char Column,unsigned int Number,unsigned char Length);
 
+void Lcd_WriteCmd(unsigned char cmd);
+void Lcd_WriteData(unsigned char data1);
+void Lcd_WriteChar(unsigned char x, unsigned char y, unsigned char char1);
+
+bit Lcd_Check_Busy();
 #endif
-

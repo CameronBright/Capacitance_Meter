@@ -1,4 +1,4 @@
-C51 COMPILER V9.57.0.0   MAIN                                                              10/09/2023 21:40:53 PAGE 1   
+C51 COMPILER V9.57.0.0   MAIN                                                              10/09/2023 23:53:22 PAGE 1   
 
 
 C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
@@ -8,23 +8,47 @@ COMPILER INVOKED BY: D:\Software\WorkSoftware\Keil5\MDK\C51\BIN\C51.EXE main.c O
 
 line level    source
 
-   1          #include <STC12C5A60S2.H>
-   2          #include "LCD1602.h"  //包含LCD1602头文件
-   3          void main()
-   4          {
-   5   1        LED1 = 0;
-   6   1        LCD_Init();
-   7   1        LCD_ShowChar(1,1,'A');
-   8   1      }
+   1          /*
+   2          program versions : 1.0
+   3          
+   4          此版本为修改前初始版本 充其量只能点个灯
+   5          
+   6          modification: 2023/10/9 22:09
+   7          
+   8          modifier: Cameron Bright
    9          
+  10          */
+  11          
+  12          #include <STC12C5A60S2.H>
+  13          #include "LCD1602.h"  //包含LCD1602头文件
+  14          
+  15          unsigned char text;
+  16          
+  17          void main()
+  18          {
+  19   1        LED1 = 0;
+  20   1        LCD_Init();
+  21   1        
+  22   1        text = 2;
+  23   1        
+  24   1        while(1)
+  25   1        {
+  26   2          //Lcd_WriteChar(1, 2, distance/10%10 + '0');
+  27   2          Lcd_WriteChar(1, 1, '2');
+  28   2          
+  29   2        }
+  30   1        
+  31   1      }
+  32          
+  33           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     14    ----
+   CODE SIZE        =     19    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =      1    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
