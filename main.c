@@ -1,7 +1,7 @@
 /*
-program versions : 1.1
+program versions : 1.1.1
 
-此版本已能显示数字，但亮度不够
+经过排查发现是硬件供电问题，现在已能正常显示
 
 modification: 2023/10/9 23:55
 

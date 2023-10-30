@@ -18,7 +18,7 @@ void LCD_Init()
 }
 void Lcd_WriteCmd(unsigned char cmd)
 {
-    //while(Lcd_Check_Busy());
+//    while(Lcd_Check_Busy());
     //用延时替代
     Delay1ms();
     Delay1ms();
