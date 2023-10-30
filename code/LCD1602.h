@@ -19,7 +19,8 @@ void LCD_Init();
 
 void Lcd_WriteCmd(unsigned char cmd);
 void Lcd_WriteData(unsigned char data1);
-void Lcd_WriteChar(unsigned char x, unsigned char y, unsigned char char1);
+void Lcd_WriteChar(unsigned char y, unsigned char x, unsigned char char1);
+void Lcd_WriteStr(unsigned char x, unsigned char y, unsigned char* string);	
 
 bit Lcd_Check_Busy();
 #endif

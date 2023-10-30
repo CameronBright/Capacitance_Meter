@@ -1,4 +1,4 @@
-C51 COMPILER V9.57.0.0   MAIN                                                              10/30/2023 18:06:09 PAGE 1   
+C51 COMPILER V9.57.0.0   MAIN                                                              10/30/2023 18:55:24 PAGE 1   
 
 
 C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
@@ -34,7 +34,7 @@ line level    source
   24   1        while(1)
   25   1        {
   26   2          //Lcd_WriteChar(1, 2, distance/10%10 + '0');
-  27   2          Lcd_WriteChar(1, 1, '2');
+  27   2          Lcd_WriteChar(2, 1, '3');
   28   2          
   29   2        }
   30   1        

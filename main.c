@@ -1,9 +1,9 @@
 /*
-program versions : 1.1.1
+program versions : 1.2.1
 
-经过排查发现是硬件供电问题，现在已能正常显示
+更换LCD1602驱动函数前的version
 
-modification: 2023/10/9 23:55
+modification: 2023/10/30 19:50
 
 modifier: Cameron Bright
 
@@ -12,7 +12,7 @@ modifier: Cameron Bright
 #include <STC12C5A60S2.H>
 #include "LCD1602.h"	//包含LCD1602头文件
 
-unsigned char text;
+char lcd_dispbuff[4] = {}
 
 void main()
 {
@@ -24,7 +24,7 @@ void main()
 	while(1)
 	{
 		//Lcd_WriteChar(1, 2, distance/10%10 + '0');
-		Lcd_WriteChar(1, 1, '2');
+		Lcd_WriteChar(2, 1, '3');
 		
 	}
 	
