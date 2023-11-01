@@ -1,4 +1,4 @@
-C51 COMPILER V9.57.0.0   MAIN                                                              10/30/2023 18:55:24 PAGE 1   
+C51 COMPILER V9.57.0.0   MAIN                                                              11/01/2023 20:00:30 PAGE 1   
 
 
 C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
@@ -9,11 +9,11 @@ COMPILER INVOKED BY: D:\Software\WorkSoftware\Keil5\MDK\C51\BIN\C51.EXE main.c O
 line level    source
 
    1          /*
-   2          program versions : 1.1.1
+   2          program versions : 1.2.1
    3          
-   4          经过排查发现是硬件供电问题，现在已能正常显示
+   4          更换LCD1602驱动函数前的version
    5          
-   6          modification: 2023/10/9 23:55
+   6          modification: 2023/10/30 19:50
    7          
    8          modifier: Cameron Bright
    9          
@@ -22,33 +22,29 @@ line level    source
   12          #include <STC12C5A60S2.H>
   13          #include "LCD1602.h"  //包含LCD1602头文件
   14          
-  15          unsigned char text;
-  16          
-  17          void main()
-  18          {
-  19   1        LED1 = 0;
-  20   1        LCD_Init();
+  15          
+  16          void main()
+  17          {
+  18   1        LED1 = 0;
+  19   1        LCD_Init();
+  20   1        
   21   1        
-  22   1        text = 2;
-  23   1        
-  24   1        while(1)
-  25   1        {
-  26   2          //Lcd_WriteChar(1, 2, distance/10%10 + '0');
-  27   2          Lcd_WriteChar(2, 1, '3');
-  28   2          
-  29   2        }
-  30   1        
-  31   1      }
-  32          
-  33           
+  22   1        while(1)
+  23   1        {
+  24   2          LCD_ShowString(2,2,"Hello!Yinyuer");
+  25   2        }
+  26   1        
+  27   1      }
+  28          
+  29           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     19    ----
-   CONSTANT SIZE    =   ----    ----
+   CODE SIZE        =     20    ----
+   CONSTANT SIZE    =     14    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      1    ----
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
