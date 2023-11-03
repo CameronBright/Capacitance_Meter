@@ -1,10 +1,10 @@
-C51 COMPILER V9.57.0.0   MAIN                                                              11/01/2023 20:00:30 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/02/2023 23:52:37 PAGE 1   
 
 
-C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
 OBJECT MODULE PLACED IN .\Objects\main.obj
-COMPILER INVOKED BY: D:\Software\WorkSoftware\Keil5\MDK\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\code) D
-                    -EBUG OBJECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\code) DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
 
 line level    source
 
@@ -22,26 +22,33 @@ line level    source
   12          #include <STC12C5A60S2.H>
   13          #include "LCD1602.h"  //包含LCD1602头文件
   14          
-  15          
-  16          void main()
-  17          {
-  18   1        LED1 = 0;
-  19   1        LCD_Init();
-  20   1        
-  21   1        
-  22   1        while(1)
-  23   1        {
-  24   2          LCD_ShowString(2,2,"Hello!Yinyuer");
-  25   2        }
-  26   1        
-  27   1      }
-  28          
-  29           
+  15          sbit V0 = P1^2;
+  16          
+  17          sbit K1 = P3^7;
+  18          sbit K2 = P3^6;
+  19          sbit K3 = P3^5;
+  20          sbit K4 = P3^4;
+  21          
+  22          void main()
+  23          {
+  24   1        LED1 = 0;
+  25   1        LCD_Init();
+  26   1        K1 = 0;
+  27   1        
+  28   1        while(1)
+  29   1        {
+  30   2          LCD_ShowString(2,2,"Hello!");
+  31   2          V0 = 0;
+  32   2        }
+  33   1        
+  34   1      }
+  35          
+  36           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     20    ----
-   CONSTANT SIZE    =     14    ----
+   CODE SIZE        =     24    ----
+   CONSTANT SIZE    =      7    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
