@@ -391,6 +391,11 @@
               <FileType>1</FileType>
               <FilePath>.\code\Delay.c</FilePath>
             </File>
+            <File>
+              <FileName>Key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\code\Key.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
