@@ -10,6 +10,7 @@
 sbit LCD_RS = P2^7;
 sbit LCD_RW = P2^6;
 sbit LCD_E = P2^5;
+
 //sbit LED_V0 = P1^0;
 
 sbit LED1 = P2^2;

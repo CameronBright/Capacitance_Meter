@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              11/02/2023 23:52:37 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/04/2023 22:08:00 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -9,11 +9,11 @@ COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE main.c OPTIMIZE(8
 line level    source
 
    1          /*
-   2          program versions : 1.2.1
+   2          program versions : 2.2
    3          
-   4          更换LCD1602驱动函数前的version
+   4          新增了蜂鸣器的功能
    5          
-   6          modification: 2023/10/30 19:50
+   6          modification: 2023/11/3 17:27
    7          
    8          modifier: Cameron Bright
    9          
@@ -22,36 +22,78 @@ line level    source
   12          #include <STC12C5A60S2.H>
   13          #include "LCD1602.h"  //包含LCD1602头文件
   14          
-  15          sbit V0 = P1^2;
+  15          void Timer0_Init(void); //1毫秒@11.0592MHz
   16          
-  17          sbit K1 = P3^7;
-  18          sbit K2 = P3^6;
-  19          sbit K3 = P3^5;
-  20          sbit K4 = P3^4;
-  21          
-  22          void main()
-  23          {
-  24   1        LED1 = 0;
-  25   1        LCD_Init();
-  26   1        K1 = 0;
-  27   1        
-  28   1        while(1)
-  29   1        {
-  30   2          LCD_ShowString(2,2,"Hello!");
-  31   2          V0 = 0;
-  32   2        }
-  33   1        
-  34   1      }
-  35          
-  36           
+  17          sbit V0 = P1^2;
+  18          
+  19          sbit K1 = P3^7;//继电器 低电平闭合
+  20          sbit K2 = P3^6;
+  21          sbit K3 = P3^5;
+  22          sbit K4 = P3^4;
+  23          
+  24          sbit Buzzer = P2^3;//蜂鸣器 低电平工作
+  25          
+  26          unsigned int timer_tick = 0;
+  27          unsigned int buzzer_tick = 0;
+  28          
+  29          void main()
+  30          {
+  31   1        Timer0_Init();//定时器初始化
+  32   1        
+  33   1        Buzzer = 0;
+  34   1        LCD_Init();
+  35   1        K2 = 0;
+  36   1        
+  37   1        EA = 1;
+  38   1        
+  39   1        while(1)
+  40   1        {
+  41   2          LCD_ShowString(2,2,"Hello!");
+  42   2          LCD_ShowNum(1,1,buzzer_tick,4);
+  43   2        }
+  44   1        
+  45   1      }
+  46          
+  47          void Timer0_Isr(void) interrupt 1
+  48          {
+  49   1      //if(++Key_Slow_Down == 10) Key_Slow_Down = 0;
+  50   1        if(Buzzer == 0)
+  51   1        {
+  52   2          if(++buzzer_tick >= 500)
+  53   2            {
+  54   3              Buzzer = 1;
+C51 COMPILER V9.60.0.0   MAIN                                                              11/04/2023 22:08:00 PAGE 2   
+
+  55   3              buzzer_tick = 0;
+  56   3            }
+  57   2        }
+  58   1        
+  59   1              
+  60   1      //  TL0 = 0x20;       //设置定时初始值
+  61   1      //  TH0 = 0xD1;       //设置定时初始值
+  62   1          
+  63   1      }
+  64          
+  65          void Timer0_Init(void)    //1毫秒@11.0592MHz
+  66          {
+  67   1        AUXR |= 0x80;     //定时器时钟1T模式
+  68   1        TMOD &= 0xF0;     //设置定时器模式
+  69   1        TL0 = 0xCD;       //设置定时初始值
+  70   1        TH0 = 0xD4;       //设置定时初始值
+  71   1        TF0 = 0;        //清除TF0标志
+  72   1        TR0 = 1;        //定时器0开始计时
+  73   1        ET0 = 1;        //使能定时器0中断
+  74   1      }
+  75          
+  76           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     24    ----
+   CODE SIZE        =    100    ----
    CONSTANT SIZE    =      7    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =      4    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
