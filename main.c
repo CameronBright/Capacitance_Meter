@@ -1,14 +1,12 @@
 /*
-program versions : 2.4
+program versions : 2.5
 
-Created Lcd process function.
-It already works in this version.
+Added long and short key press function;
 
-modification: 2023/11/5 11:43
+modification: 2023/11/5 21:11
 
 modifier: Cameron Bright
 
-测试
 */
 
 #include "main.h"
@@ -33,8 +31,13 @@ unsigned int timer_tick = 0;
 unsigned int buzzer_tick = 0;//用于开机计数500ms
 
 unsigned char key_value; //按键处理变量
-unsigned char key_Dowm;
+unsigned char key_down;
+unsigned char key_up;
 unsigned char key_old;
+
+unsigned int key_tick; //long key press count
+
+unsigned char page = 0;
 
 unsigned int key_slow_down = 0;
 unsigned int lcd_slow_down = 0;
@@ -45,7 +48,7 @@ void main()
 {
 	Timer0_Init();//定时器初始化
 	
-	Buzzer = 0;
+	//Buzzer = 0;
 	LCD_Init();
 	K2 = 0;
 	
@@ -64,8 +67,18 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	if(lcd_slow_down) return;   //10ms更新一次
 		lcd_slow_down = 1;
 	
-	LCD_ShowString(2,2,"Hello!");
-	LCD_ShowNum(1,1,dispbuf,4);
+	if(page == 0)
+	{
+		LCD_ShowString(2,2,"Hello!");
+	
+		LCD_ShowNum(1,1,dispbuf,4);
+		LCD_ShowNum(1,8,key_tick,4);
+	}
+	else if(page == 1)
+	{
+		LCD_ShowString(2,2,"ctrl");
+	}
+	
 	
 }
 
@@ -75,60 +88,79 @@ void Key_Proc(void)
 		key_slow_down = 1;
 	
 	key_value = Key_Read();
-	key_Dowm = key_value & (key_value ^ key_old);
+	key_down = key_value & (key_value ^ key_old);
+	key_up = ~key_value & (key_value ^ key_old);
 	key_old = key_value;
 
-	switch(key_Dowm)
+	if(key_down)       //长按五秒
+		key_tick = 5000;
+	
+	if(key_old)
+	{
+		if(key_tick == 0)
+			{
+				Lcd_Clear();
+				page = 1;
+			}
+	}
+	
+	switch(key_up)
 	{
 		case 1:
 		{
-			LED1 ^= 1;
+			LED1 = 1;
 			break;
 		}
 		case 2: 
 		{
-			if(--dispbuf == 0)          //S6 UP
+			if(--dispbuf == 0)          
 				dispbuf = 10;
+			key_tick = 0;
 			break;
 		}
 		case 3:
 		{
-			if(++dispbuf == 10)          //S6 UP
+			if(++dispbuf == 10)          
 				dispbuf = 0;
+			key_tick = 0;
+			break;
+		}
+		case 4:
+		{
+			LED1 = 0;
+			break;
+		}
+		case 5:
+		{
+			LED1 ^= 1;
+			break;
+		}
+		case 6:
+		{
+			LED1 ^= 1;
 			break;
 		}
 		default:
 			break;
- 	}	
-		
-////		case 3: 
-////			key_flag = 1;         //S3 L
-////		break;
-////		case 4:
-////			Send_Message(0x00ff);  //S7 TEST
-////		break;
-////		case 5:
-////			Send_Message(0x66AA);  //S2 OFF\ON
-////		break;
-////		case 6:
-////			key_flag = 3;         //S4 R
-////		break;
-
+ 	}		
 }
 
 void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
-	if(++lcd_slow_down == 100) lcd_slow_down = 0;
+	if(++lcd_slow_down == 200) lcd_slow_down = 0;
 	
-	if(Buzzer == 0)
-	{
-		if(++buzzer_tick >= 500)
-			{
-				Buzzer = 1;
-				buzzer_tick = 0;
-			}
-	}
+	if(key_tick > 0) key_tick--;
+	
+//	if(Buzzer == 0)
+//	{
+//		if(++buzzer_tick >= 500)
+//			{
+//				Buzzer = 1;
+//				buzzer_tick = 0;
+//			}
+//	}
+	
 	
 				
 //	TL0 = 0x20;				//设置定时初始值
