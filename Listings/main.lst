@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:21:36 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
   52   1        LCD_Init();
   53   1        K2 = 0;
   54   1        
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 2   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:21:36 PAGE 2   
 
   55   1        EA = 1;
   56   1        
@@ -126,7 +126,7 @@ line level    source
  114   2          case 2: 
  115   2          {
  116   3            if(--dispbuf == 0)          
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 3   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:21:36 PAGE 3   
 
  117   3              dispbuf = 10;
  118   3            key_tick = 0;
@@ -190,7 +190,7 @@ line level    source
  176   1        TH0 = 0xD4;       //设置定时初始值
  177   1        TF0 = 0;        //清除TF0标志
  178   1        TR0 = 1;        //定时器0开始计时
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 4   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:21:36 PAGE 4   
 
  179   1        ET0 = 1;        //使能定时器0中断
  180   1      }
