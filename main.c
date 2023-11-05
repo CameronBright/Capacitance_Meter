@@ -1,9 +1,10 @@
 /*
-program versions : 2.2.1
+program versions : 2.3
 
-增加按键函数 此Version暂未实现功能，但是下班了
+Created the keystroke function;
+It already works in this version.
 
-modification: 2023/11/4 23:02
+modification: 2023/11/5 10:17
 
 modifier: Cameron Bright
 
@@ -28,12 +29,13 @@ void Key_Proc(void);    //按键处理函数
 unsigned int timer_tick = 0;
 unsigned int buzzer_tick = 0;//用于开机计数500ms
 
-unsigned char key_value = 0; //按键处理变量
-unsigned char key_Dowm = 0;
-unsigned char key_old = 0;
+unsigned char key_value; //按键处理变量
+unsigned char key_Dowm;
+unsigned char key_old;
+
 unsigned int Key_Slow_Down = 0;
 
-unsigned int dispbuf;
+unsigned int dispbuf = 0;
 
 void main()
 {
@@ -47,8 +49,9 @@ void main()
 	
 	while(1)
 	{
-		LCD_ShowString(2,2,"Hello!");
-		LCD_ShowNum(1,1,dispbuf,4);
+//		LCD_ShowString(2,2,"Hello!");
+//		LCD_ShowNum(1,1,dispbuf,4);
+		Key_Proc();
 	}
 	
 }
@@ -61,28 +64,37 @@ void Key_Proc(void)
 	key_value = Key_Read();
 	key_Dowm = key_value & (key_value ^ key_old);
 	key_old = key_value;
-	
+
 	switch(key_Dowm)
 	{
-		case 0:
-			dispbuf += 1;          //S6 UP
-		break;
-		case 1: 
-			dispbuf -= 1;         //S5 DOWN
- 		break;
-//		case 3: 
-//			key_flag = 1;         //S3 L
-//		break;
-//		case 4:
-//			Send_Message(0x00ff);  //S7 TEST
-//		break;
-//		case 5:
-//			Send_Message(0x66AA);  //S2 OFF\ON
-//		break;
-//		case 6:
-//			key_flag = 3;         //S4 R
-//		break;
-	}
+		case 1:
+		{
+			LED1 ^= 1;
+			break;
+		}
+		case 2: 
+		{
+			if(--dispbuf == 0)          //S6 UP
+				dispbuf = 10;
+			break;
+		}
+		default:
+			break;
+ 	}	
+		
+////		case 3: 
+////			key_flag = 1;         //S3 L
+////		break;
+////		case 4:
+////			Send_Message(0x00ff);  //S7 TEST
+////		break;
+////		case 5:
+////			Send_Message(0x66AA);  //S2 OFF\ON
+////		break;
+////		case 6:
+////			key_flag = 3;         //S4 R
+////		break;
+
 }
 
 void Timer0_Isr(void) interrupt 1

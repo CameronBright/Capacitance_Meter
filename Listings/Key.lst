@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   KEY                                                               11/04/2023 22:56:56 PAGE 1   
+C51 COMPILER V9.60.0.0   KEY                                                               11/05/2023 09:47:37 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE KEY
@@ -15,23 +15,23 @@ line level    source
    5   1        unsigned char key_value = 0;
    6   1      
    7   1        if(P12 == 0)   //±³¹â/Ð£×¼
-   8   1          key_value = 0;
+   8   1          key_value = 1;
    9   1        if(P13 == 0)   //¡ü
-  10   1          key_value = 1;
+  10   1          key_value = 2;
   11   1        if(P14 == 0)   //¡ý
-  12   1          key_value = 2;
+  12   1          key_value = 3;
   13   1        if(P15 == 0)   //¡û
-  14   1          key_value = 3;
+  14   1          key_value = 4;
   15   1        if(P16 == 0)   //¡ú
-  16   1          key_value = 4;
+  16   1          key_value = 5;
   17   1        if(P33 == 0)   //OK
-  18   1          key_value = 5;
+  18   1          key_value = 6;
   19   1        return key_value;
   20   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     28    ----
+   CODE SIZE        =     32    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
