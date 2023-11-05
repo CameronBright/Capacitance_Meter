@@ -1,13 +1,14 @@
 /*
-program versions : 2.3
+program versions : 2.4
 
-Created the keystroke function;
+Created Lcd process function.
 It already works in this version.
 
-modification: 2023/11/5 10:17
+modification: 2023/11/5 11:43
 
 modifier: Cameron Bright
 
+1111
 */
 
 #include "main.h"
@@ -24,7 +25,9 @@ sbit K4 = P3^4;
 sbit Buzzer = P2^3;//蜂鸣器 低电平工作
 
 void Timer0_Init(void);	//1毫秒@11.0592MHz
-void Key_Proc(void);    //按键处理函数
+
+void Key_Proc(void);    //Keystroke process function
+void Lcd_Proc(void);    //LCD Dsiplay process function
 
 unsigned int timer_tick = 0;
 unsigned int buzzer_tick = 0;//用于开机计数500ms
@@ -33,7 +36,8 @@ unsigned char key_value; //按键处理变量
 unsigned char key_Dowm;
 unsigned char key_old;
 
-unsigned int Key_Slow_Down = 0;
+unsigned int key_slow_down = 0;
+unsigned int lcd_slow_down = 0;
 
 unsigned int dispbuf = 0;
 
@@ -48,18 +52,27 @@ void main()
 	EA = 1;
 	
 	while(1)
-	{
-//		LCD_ShowString(2,2,"Hello!");
-//		LCD_ShowNum(1,1,dispbuf,4);
+	{	
 		Key_Proc();
+		Lcd_Proc();
 	}
+	
+}
+
+void Lcd_Proc(void)     //LCD Dsiplay process function
+{
+	if(lcd_slow_down) return;   //10ms更新一次
+		lcd_slow_down = 1;
+	
+	LCD_ShowString(2,2,"Hello!");
+	LCD_ShowNum(1,1,dispbuf,4);
 	
 }
 
 void Key_Proc(void)
 {
-	if(Key_Slow_Down) return;   //10ms更新一次
-		Key_Slow_Down = 1;
+	if(key_slow_down) return;   //10ms更新一次
+		key_slow_down = 1;
 	
 	key_value = Key_Read();
 	key_Dowm = key_value & (key_value ^ key_old);
@@ -76,6 +89,12 @@ void Key_Proc(void)
 		{
 			if(--dispbuf == 0)          //S6 UP
 				dispbuf = 10;
+			break;
+		}
+		case 3:
+		{
+			if(++dispbuf == 10)          //S6 UP
+				dispbuf = 0;
 			break;
 		}
 		default:
@@ -99,7 +118,8 @@ void Key_Proc(void)
 
 void Timer0_Isr(void) interrupt 1
 {
-	if(++Key_Slow_Down == 10) Key_Slow_Down = 0;
+	if(++key_slow_down == 10) key_slow_down = 0;
+	if(++lcd_slow_down == 100) lcd_slow_down = 0;
 	
 	if(Buzzer == 0)
 	{
