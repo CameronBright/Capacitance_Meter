@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 12:21:51 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -9,45 +9,45 @@ COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE main.c OPTIMIZE(8
 line level    source
 
    1          /*
-   2          program versions : 2.4
+   2          program versions : 2.5
    3          
-   4          Created Lcd process function.
-   5          It already works in this version.
-   6          
-   7          modification: 2023/11/5 11:43
-   8          
-   9          modifier: Cameron Bright
-  10          
+   4          Added long and short key press function;
+   5          
+   6          modification: 2023/11/5 21:11
+   7          
+   8          modifier: Cameron Bright
+   9          
+  10          */
   11          
-  12          
-  13          */
-  14          
-  15          #include "main.h"
-  16          #include "LCD1602.h"  //包含LCD1602头文件
-  17          #include "Key.h"      //按键扫描函数
-  18          
-  19          sbit V0 = P1^2;
-  20          
-  21          sbit K1 = P3^7;//继电器 低电平闭合
-  22          sbit K2 = P3^6;
-  23          sbit K3 = P3^5;
-  24          sbit K4 = P3^4;
-  25          
-  26          sbit K5 = P2^4;
-  27          
-  28          sbit Buzzer = P2^3;//蜂鸣器 低电平工作
+  12          #include "main.h"
+  13          #include "LCD1602.h"  //包含LCD1602头文件
+  14          #include "Key.h"      //按键扫描函数
+  15          
+  16          sbit V0 = P1^2;
+  17          
+  18          sbit K1 = P3^7;//继电器 低电平闭合
+  19          sbit K2 = P3^6;
+  20          sbit K3 = P3^5;
+  21          sbit K4 = P3^4;
+  22          
+  23          sbit Buzzer = P2^3;//蜂鸣器 低电平工作
+  24          
+  25          void Timer0_Init(void); //1毫秒@11.0592MHz
+  26          
+  27          void Key_Proc(void);    //Keystroke process function
+  28          void Lcd_Proc(void);    //LCD Dsiplay process function
   29          
-  30          void Timer0_Init(void); //1毫秒@11.0592MHz
-  31          
-  32          void Key_Proc(void);    //Keystroke process function
-  33          void Lcd_Proc(void);    //LCD Dsiplay process function
-  34          
-  35          unsigned int timer_tick = 0;
-  36          unsigned int buzzer_tick = 0;//用于开机计数500ms
+  30          unsigned int timer_tick = 0;
+  31          unsigned int buzzer_tick = 0;//用于开机计数500ms
+  32          
+  33          unsigned char key_value; //按键处理变量
+  34          unsigned char key_down;
+  35          unsigned char key_up;
+  36          unsigned char key_old;
   37          
-  38          unsigned char key_value; //按键处理变量
-  39          unsigned char key_Dowm;
-  40          unsigned char key_old;
+  38          unsigned int key_tick; //long key press count
+  39          
+  40          unsigned char page = 0;
   41          
   42          unsigned int key_slow_down = 0;
   43          unsigned int lcd_slow_down = 0;
@@ -58,11 +58,11 @@ line level    source
   48          {
   49   1        Timer0_Init();//定时器初始化
   50   1        
-  51   1        Buzzer = 0;
+  51   1        //Buzzer = 0;
   52   1        LCD_Init();
   53   1        K2 = 0;
   54   1        
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 12:21:51 PAGE 2   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 2   
 
   55   1        EA = 1;
   56   1        
@@ -79,100 +79,131 @@ line level    source
   67   1        if(lcd_slow_down) return;   //10ms更新一次
   68   1          lcd_slow_down = 1;
   69   1        
-  70   1        LCD_ShowString(2,2,"Hello!");
-  71   1        LCD_ShowNum(1,1,dispbuf,4);
-  72   1        
-  73   1      }
-  74          
-  75          void Key_Proc(void)
-  76          {
-  77   1        if(key_slow_down) return;   //10ms更新一次
-  78   1          key_slow_down = 1;
-  79   1        
-  80   1        key_value = Key_Read();
-  81   1        key_Dowm = key_value & (key_value ^ key_old);
-  82   1        key_old = key_value;
-  83   1      
-  84   1        switch(key_Dowm)
-  85   1        {
-  86   2          case 1:
-  87   2          {
-  88   3            LED1 ^= 1;
-  89   3            break;
-  90   3          }
-  91   2          case 2: 
-  92   2          {
-  93   3            if(--dispbuf == 0)          //S6 UP
-  94   3              dispbuf = 10;
-  95   3            break;
-  96   3          }
-  97   2          case 3:
-  98   2          {
-  99   3            if(++dispbuf == 10)          //S6 UP
- 100   3              dispbuf = 0;
- 101   3            break;
- 102   3          }
- 103   2          default:
- 104   2            break;
- 105   2        } 
- 106   1          
- 107   1      ////    case 3: 
- 108   1      ////      key_flag = 1;         //S3 L
- 109   1      ////    break;
- 110   1      ////    case 4:
- 111   1      ////      Send_Message(0x00ff);  //S7 TEST
- 112   1      ////    break;
- 113   1      ////    case 5:
- 114   1      ////      Send_Message(0x66AA);  //S2 OFF\ON
- 115   1      ////    break;
- 116   1      ////    case 6:
-C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 12:21:51 PAGE 3   
+  70   1        if(page == 0)
+  71   1        {
+  72   2          LCD_ShowString(2,2,"Hello!");
+  73   2        
+  74   2          LCD_ShowNum(1,1,dispbuf,4);
+  75   2          LCD_ShowNum(1,8,key_tick,4);
+  76   2        }
+  77   1        else if(page == 1)
+  78   1        {
+  79   2          LCD_ShowString(2,2,"ctrl");
+  80   2        }
+  81   1        
+  82   1        
+  83   1      }
+  84          
+  85          void Key_Proc(void)
+  86          {
+  87   1        if(key_slow_down) return;   //10ms更新一次
+  88   1          key_slow_down = 1;
+  89   1        
+  90   1        key_value = Key_Read();
+  91   1        key_down = key_value & (key_value ^ key_old);
+  92   1        key_up = ~key_value & (key_value ^ key_old);
+  93   1        key_old = key_value;
+  94   1      
+  95   1        if(key_down)       //长按五秒
+  96   1          key_tick = 5000;
+  97   1        
+  98   1        if(key_old)
+  99   1        {
+ 100   2          if(key_tick == 0)
+ 101   2            {
+ 102   3              Lcd_Clear();
+ 103   3              page = 1;
+ 104   3            }
+ 105   2        }
+ 106   1        
+ 107   1        switch(key_up)
+ 108   1        {
+ 109   2          case 1:
+ 110   2          {
+ 111   3            LED1 = 1;
+ 112   3            break;
+ 113   3          }
+ 114   2          case 2: 
+ 115   2          {
+ 116   3            if(--dispbuf == 0)          
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 3   
 
- 117   1      ////      key_flag = 3;         //S4 R
- 118   1      ////    break;
- 119   1      
- 120   1      }
- 121          
- 122          void Timer0_Isr(void) interrupt 1
- 123          {
- 124   1        if(++key_slow_down == 10) key_slow_down = 0;
- 125   1        if(++lcd_slow_down == 100) lcd_slow_down = 0;
- 126   1        
- 127   1        if(Buzzer == 0)
- 128   1        {
- 129   2          if(++buzzer_tick >= 500)
- 130   2            {
- 131   3              Buzzer = 1;
- 132   3              buzzer_tick = 0;
- 133   3            }
- 134   2        }
- 135   1        
- 136   1              
- 137   1      //  TL0 = 0x20;       //设置定时初始值
- 138   1      //  TH0 = 0xD1;       //设置定时初始值
- 139   1          
- 140   1      }
- 141          
- 142          void Timer0_Init(void)    //1毫秒@11.0592MHz
- 143          {
- 144   1        AUXR |= 0x80;     //定时器时钟1T模式
- 145   1        TMOD &= 0xF0;     //设置定时器模式
- 146   1        TL0 = 0xCD;       //设置定时初始值
- 147   1        TH0 = 0xD4;       //设置定时初始值
- 148   1        TF0 = 0;        //清除TF0标志
- 149   1        TR0 = 1;        //定时器0开始计时
- 150   1        ET0 = 1;        //使能定时器0中断
- 151   1      }
- 152          
- 153           
+ 117   3              dispbuf = 10;
+ 118   3            key_tick = 0;
+ 119   3            break;
+ 120   3          }
+ 121   2          case 3:
+ 122   2          {
+ 123   3            if(++dispbuf == 10)          
+ 124   3              dispbuf = 0;
+ 125   3            key_tick = 0;
+ 126   3            break;
+ 127   3          }
+ 128   2          case 4:
+ 129   2          {
+ 130   3            LED1 = 0;
+ 131   3            break;
+ 132   3          }
+ 133   2          case 5:
+ 134   2          {
+ 135   3            LED1 ^= 1;
+ 136   3            break;
+ 137   3          }
+ 138   2          case 6:
+ 139   2          {
+ 140   3            LED1 ^= 1;
+ 141   3            break;
+ 142   3          }
+ 143   2          default:
+ 144   2            break;
+ 145   2        }   
+ 146   1      }
+ 147          
+ 148          void Timer0_Isr(void) interrupt 1
+ 149          {
+ 150   1        if(++key_slow_down == 10) key_slow_down = 0;
+ 151   1        if(++lcd_slow_down == 200) lcd_slow_down = 0;
+ 152   1        
+ 153   1        if(key_tick > 0) key_tick--;
+ 154   1        
+ 155   1      //  if(Buzzer == 0)
+ 156   1      //  {
+ 157   1      //    if(++buzzer_tick >= 500)
+ 158   1      //      {
+ 159   1      //        Buzzer = 1;
+ 160   1      //        buzzer_tick = 0;
+ 161   1      //      }
+ 162   1      //  }
+ 163   1        
+ 164   1        
+ 165   1              
+ 166   1      //  TL0 = 0x20;       //设置定时初始值
+ 167   1      //  TH0 = 0xD1;       //设置定时初始值
+ 168   1          
+ 169   1      }
+ 170          
+ 171          void Timer0_Init(void)    //1毫秒@11.0592MHz
+ 172          {
+ 173   1        AUXR |= 0x80;     //定时器时钟1T模式
+ 174   1        TMOD &= 0xF0;     //设置定时器模式
+ 175   1        TL0 = 0xCD;       //设置定时初始值
+ 176   1        TH0 = 0xD4;       //设置定时初始值
+ 177   1        TF0 = 0;        //清除TF0标志
+ 178   1        TR0 = 1;        //定时器0开始计时
+C51 COMPILER V9.60.0.0   MAIN                                                              11/05/2023 21:11:41 PAGE 4   
+
+ 179   1        ET0 = 1;        //使能定时器0中断
+ 180   1      }
+ 181          
+ 182           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    236    ----
-   CONSTANT SIZE    =      7    ----
+   CODE SIZE        =    324    ----
+   CONSTANT SIZE    =     12    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     13    ----
+   DATA SIZE        =     17    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

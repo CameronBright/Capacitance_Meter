@@ -23,4 +23,5 @@ void LCD_ShowChar(unsigned char Line,unsigned char Columu,unsigned char Char);
 void LCD_ShowString(unsigned char Line,unsigned char Columu,unsigned char* String);
 void LCD_ShowNum(unsigned char Line,unsigned char Columu,unsigned int Num,unsigned int Length);
 
+void Lcd_Clear(void);
 #endif

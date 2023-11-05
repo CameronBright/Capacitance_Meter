@@ -89,3 +89,8 @@ void LCD_ShowNum(unsigned char Line,unsigned char Columu,unsigned int Num,unsign
 		}
 }
 
+void Lcd_Clear(void)
+{
+	LCD_WriteCommand(0x01);//0000 0001 清屏 
+}
+
