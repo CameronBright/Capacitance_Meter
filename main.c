@@ -1,7 +1,8 @@
 /*
-program versions : 2.5
+program versions : 2.6
 
-Added long and short key press function;
+增加lcd1602 光标移动
+It already works in this version;
 
 modification: 2023/11/5 21:11
 
@@ -37,12 +38,15 @@ unsigned char key_old;
 
 unsigned int key_tick; //long key press count
 
-unsigned char page = 0;
+unsigned char page = 0;//lcd 显示界面
+unsigned char cursor = 0;
 
 unsigned int key_slow_down = 0;
 unsigned int lcd_slow_down = 0;
 
 unsigned int dispbuf = 0;
+
+unsigned char password[6] = {'0','0','0','0','0','0'};
 
 void main()
 {
@@ -69,15 +73,18 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 0)
 	{
-		LCD_ShowString(2,2,"Hello!");
+		LCD_ShowString(1,1,"Hello!");
 	
-		LCD_ShowNum(1,1,dispbuf,4);
-		LCD_ShowNum(1,8,key_tick,4);
+//		LCD_ShowNum(1,1,dispbuf,4);
+//		LCD_ShowNum(1,8,key_tick,4);
 	}
 	else if(page == 1)
 	{
-		LCD_ShowString(2,2,"ctrl");
+		//LCD_ShowString(1,2,"Input Password");
+		//LCD_ShowString(2,6,password);
 	}
+	
+	LCD_WriteCommand(0x80+cursor); //光标
 	
 	
 }
@@ -127,12 +134,12 @@ void Key_Proc(void)
 		}
 		case 4:
 		{
-			LED1 = 0;
+			key_tick = 0;
 			break;
 		}
 		case 5:
 		{
-			LED1 ^= 1;
+			key_tick = 0;
 			break;
 		}
 		case 6:
@@ -148,7 +155,7 @@ void Key_Proc(void)
 void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
-	if(++lcd_slow_down == 200) lcd_slow_down = 0;
+	if(++lcd_slow_down == 300) lcd_slow_down = 0;
 	
 	if(key_tick > 0) key_tick--;
 	

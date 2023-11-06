@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   LCD1602                                                           11/05/2023 21:21:36 PAGE 1   
+C51 COMPILER V9.60.0.0   LCD1602                                                           11/06/2023 17:08:22 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD1602
@@ -37,79 +37,80 @@ line level    source
   27          
   28          void LCD_Init()
   29          {
-  30   1          LCD_WriteCommand(0x38);//0011 1000 数据总线8位 16X2显示 5*7点阵
-  31   1          LCD_WriteCommand(0x0c);// 0000 1100 显示关，游标不显示，不闪烁
-  32   1          LCD_WriteCommand(0x06);// 0000 0110 写入数据后光标自动右移 整屏不移动
-  33   1          LCD_WriteCommand(0x01);//0000 0001 清屏 
-  34   1      }
-  35          
-  36          void LCD_SetCursor(unsigned char Line,unsigned char Columu)
-  37          {
-  38   1        if(Line == 1)
-  39   1        {
-  40   2          LCD_WriteCommand( 0x80 | (Columu-1) );
-  41   2        }
-  42   1        else
-  43   1        {
-  44   2          LCD_WriteCommand( 0x80 | ( Columu-1 )+0x40 );
-  45   2        }
-  46   1      }
-  47          
-  48          void LCD_ShowChar(unsigned char Line , unsigned char Columu , unsigned char Char)
-  49          {
-  50   1          LCD_SetCursor(Line,Columu);
-  51   1        
-  52   1          LCD_WriteData(Char);
-  53   1      }
-  54          
-C51 COMPILER V9.60.0.0   LCD1602                                                           11/05/2023 21:21:36 PAGE 2   
+  30   1        //LCD_WriteCommand(0x01);//0000 0001 清屏 
+  31   1        LCD_WriteCommand(0x38);//0011 1000 数据总线8位 16X2显示 5*7点阵
+  32   1        LCD_WriteCommand(0x0F);// 0000 1110 显示开，游标开，闪烁关
+  33   1        LCD_WriteCommand(0x06);// 0000 0110 写入数据后光标自动右移 整屏不移动
+  34   1        
+  35   1      }
+  36          
+  37          void LCD_SetCursor(unsigned char Line,unsigned char Columu)
+  38          {
+  39   1        if(Line == 1)
+  40   1        {
+  41   2          LCD_WriteCommand( 0x80 | (Columu-1) );
+  42   2        }
+  43   1        else
+  44   1        {
+  45   2          LCD_WriteCommand( 0x80 | ( Columu-1 )+0x40 );
+  46   2        }
+  47   1      }
+  48          
+  49          void LCD_ShowChar(unsigned char Line , unsigned char Columu , unsigned char Char)
+  50          {
+  51   1          LCD_SetCursor(Line,Columu);
+  52   1        
+  53   1          LCD_WriteData(Char);
+  54   1      }
+C51 COMPILER V9.60.0.0   LCD1602                                                           11/06/2023 17:08:22 PAGE 2   
 
-  55          void LCD_ShowString(unsigned char Line , unsigned char Columu , unsigned char* String)
-  56          {
-  57   1          unsigned char i = 0;
-  58   1        
-  59   1          LCD_SetCursor(Line,Columu);
-  60   1        
-  61   1          for(i=0;String[i] != '\0';i++)
-  62   1          {
-  63   2              LCD_WriteData(String[i]);
-  64   2          }
-  65   1      }
-  66          
-  67          int LCD_Pow(unsigned char x,unsigned char y)
-  68          {
-  69   1          int result = 1;
-  70   1          unsigned char i = 0;
-  71   1          
-  72   1          for(i=0;i<y;i++)
-  73   1          {
-  74   2              result *= x;
-  75   2          }
-  76   1          
-  77   1          return result;
-  78   1      }
-  79          
-  80          void LCD_ShowNum(unsigned char Line,unsigned char Columu,unsigned int Num,unsigned int Length)
-  81          {
-  82   1          unsigned char i = 0;
-  83   1          
-  84   1          LCD_SetCursor(Line,Columu);
-  85   1          
-  86   1          for(i=Length;i>0;i--)
-  87   1          {
-  88   2              LCD_WriteData('0'+Num/LCD_Pow(10,i-1)%10);
-  89   2          }
-  90   1      }
-  91          
-  92          void Lcd_Clear(void)
-  93          {
-  94   1        LCD_WriteCommand(0x01);//0000 0001 清屏 
-  95   1      }
-  96          
+  55          
+  56          void LCD_ShowString(unsigned char Line , unsigned char Columu , unsigned char* String)
+  57          {
+  58   1          unsigned char i = 0;
+  59   1        
+  60   1          LCD_SetCursor(Line,Columu);
+  61   1        
+  62   1          for(i=0;String[i] != '\0';i++)
+  63   1          {
+  64   2              LCD_WriteData(String[i]);
+  65   2          }
+  66   1      }
+  67          
+  68          int LCD_Pow(unsigned char x,unsigned char y)
+  69          {
+  70   1          int result = 1;
+  71   1          unsigned char i = 0;
+  72   1          
+  73   1          for(i=0;i<y;i++)
+  74   1          {
+  75   2              result *= x;
+  76   2          }
+  77   1          
+  78   1          return result;
+  79   1      }
+  80          
+  81          void LCD_ShowNum(unsigned char Line,unsigned char Columu,unsigned int Num,unsigned int Length)
+  82          {
+  83   1          unsigned char i = 0;
+  84   1          
+  85   1          LCD_SetCursor(Line,Columu);
+  86   1          
+  87   1          for(i=Length;i>0;i--)
+  88   1          {
+  89   2              LCD_WriteData('0'+Num/LCD_Pow(10,i-1)%10);
+  90   2          }
+  91   1      }
+  92          
+  93          void Lcd_Clear(void)
+  94          {
+  95   1        LCD_WriteCommand(0x01);//0000 0001 清屏 
+  96   1      }
+  97          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    222    ----
+   CODE SIZE        =    217    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

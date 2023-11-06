@@ -27,10 +27,11 @@ void LCD_WriteData(unsigned char Data)
 
 void LCD_Init()
 {
-		LCD_WriteCommand(0x38);//0011 1000 数据总线8位 16X2显示 5*7点阵
-		LCD_WriteCommand(0x0c);// 0000 1100 显示关，游标不显示，不闪烁
-		LCD_WriteCommand(0x06);// 0000 0110 写入数据后光标自动右移 整屏不移动
-		LCD_WriteCommand(0x01);//0000 0001 清屏 
+	//LCD_WriteCommand(0x01);//0000 0001 清屏 
+	LCD_WriteCommand(0x38);//0011 1000 数据总线8位 16X2显示 5*7点阵
+	LCD_WriteCommand(0x0F);// 0000 1110 显示开，游标开，闪烁关
+	LCD_WriteCommand(0x06);// 0000 0110 写入数据后光标自动右移 整屏不移动
+	
 }
 
 void LCD_SetCursor(unsigned char Line,unsigned char Columu)
