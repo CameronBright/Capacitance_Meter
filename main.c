@@ -1,10 +1,9 @@
 /*
-program versions : 2.6
+program versions : 2.6.1
 
-增加lcd1602 光标移动
-It already works in this version;
+完善光标移动功能，密码功能还没做完，但是下班了
 
-modification: 2023/11/5 21:11
+modification: 2023/11/6 23:11
 
 modifier: Cameron Bright
 
@@ -39,7 +38,7 @@ unsigned char key_old;
 unsigned int key_tick; //long key press count
 
 unsigned char page = 0;//lcd 显示界面
-unsigned char cursor = 0;
+unsigned char cursor = 5;
 
 unsigned int key_slow_down = 0;
 unsigned int lcd_slow_down = 0;
@@ -73,19 +72,22 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 0)
 	{
-		LCD_ShowString(1,1,"Hello!");
+		LCD_WriteCommand(0x0C);//关光标
+		
+		LCD_ShowString(2,1,"Hello!");
 	
-//		LCD_ShowNum(1,1,dispbuf,4);
-//		LCD_ShowNum(1,8,key_tick,4);
+		LCD_ShowNum(1,1,dispbuf,4);
+		LCD_ShowNum(1,8,key_tick,4);
 	}
 	else if(page == 1)
 	{
-		//LCD_ShowString(1,2,"Input Password");
-		//LCD_ShowString(2,6,password);
+		LCD_WriteCommand(0x0f);//开光标
+		LCD_ShowString(1,2,"Input Password");
+		LCD_ShowString(2,6,password);
 	}
 	
-	LCD_WriteCommand(0x80+cursor); //光标
-	
+	//LCD_WriteCommand(0x80+cursor); //第一行光标
+	LCD_WriteCommand(0xc0+cursor); //第二行光标 
 	
 }
 
@@ -100,7 +102,7 @@ void Key_Proc(void)
 	key_old = key_value;
 
 	if(key_down)       //长按五秒
-		key_tick = 5000;
+		key_tick = 2000;
 	
 	if(key_old)
 	{
@@ -120,25 +122,33 @@ void Key_Proc(void)
 		}
 		case 2: 
 		{
-			if(--dispbuf == 0)          
-				dispbuf = 10;
+			password[cursor-5] += 1;
+			if(password[cursor-5] > '9')
+				password[cursor-5] = '9';
+		
 			key_tick = 0;
 			break;
 		}
 		case 3:
 		{
-			if(++dispbuf == 10)          
-				dispbuf = 0;
+			password[cursor-5] -= 1;
+//			if(password[cursor-5] < 0)
+//				password[cursor-5] = 0;
+			
 			key_tick = 0;
 			break;
 		}
 		case 4:
 		{
+			if(--cursor <= 5)
+				cursor = 5;
 			key_tick = 0;
 			break;
 		}
 		case 5:
 		{
+			if(++cursor >= 10)
+				cursor = 10;
 			key_tick = 0;
 			break;
 		}
