@@ -1,15 +1,16 @@
 /*
-program versions : 2.6.1
+program versions : 3.0
 
-完善光标移动功能，密码功能还没做完，但是下班了
+所有除了电容测量的功能全部都已实现
 
-modification: 2023/11/6 23:11
+modification: 2023/11/7 20:11
 
 modifier: Cameron Bright
 
 */
 
 #include "main.h"
+#include <string.h>
 #include "LCD1602.h"	//包含LCD1602头文件
 #include "Key.h"      //按键扫描函数
 
@@ -23,6 +24,7 @@ sbit K4 = P3^4;
 sbit Buzzer = P2^3;//蜂鸣器 低电平工作
 
 void Timer0_Init(void);	//1毫秒@11.0592MHz
+void Delay(unsigned int delay); //定时器延时 
 
 void Key_Proc(void);    //Keystroke process function
 void Lcd_Proc(void);    //LCD Dsiplay process function
@@ -35,17 +37,22 @@ unsigned char key_down;
 unsigned char key_up;
 unsigned char key_old;
 
+unsigned int led1_tick; //状态灯计数
 unsigned int key_tick; //long key press count
+unsigned int delay_tick;//定时器延时计数
 
 unsigned char page = 0;//lcd 显示界面
-unsigned char cursor = 5;
+unsigned char cursor = 5; //光标
 
-unsigned int key_slow_down = 0;
-unsigned int lcd_slow_down = 0;
-
-unsigned int dispbuf = 0;
+unsigned int key_slow_down = 0; //按键刷新计数
+unsigned int lcd_slow_down = 0; //LCD刷新计数
 
 unsigned char password[6] = {'0','0','0','0','0','0'};
+//unsigned char password_true[6] = {'8','7','6','5','4','3'};
+unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
+unsigned char password_for = 0; 
+
+unsigned int cap_value = 0;
 
 void main()
 {
@@ -65,31 +72,54 @@ void main()
 	
 }
 
+//================LCD=======================
+
 void Lcd_Proc(void)     //LCD Dsiplay process function
 {
 	if(lcd_slow_down) return;   //10ms更新一次
 		lcd_slow_down = 1;
 	
-	if(page == 0)
+	if(page == 0)            //测量界面 初始界面
 	{
 		LCD_WriteCommand(0x0C);//关光标
 		
-		LCD_ShowString(2,1,"Hello!");
+		LCD_ShowString(1,1,"Press OK Start!");
 	
-		LCD_ShowNum(1,1,dispbuf,4);
-		LCD_ShowNum(1,8,key_tick,4);
+		LCD_ShowNum(2,1,cap_value,4);
+		LCD_ShowNum(2,8,key_tick,4);
 	}
-	else if(page == 1)
+	else if(page == 1)       //输密码页
 	{
 		LCD_WriteCommand(0x0f);//开光标
+		
 		LCD_ShowString(1,2,"Input Password");
 		LCD_ShowString(2,6,password);
+	}
+	else if(page == 2)       //密码错误页
+	{
+		LCD_WriteCommand(0x0C);//关光标
+		LCD_ShowString(1,6,"ERROR");
+		LCD_ShowNum(2,1,delay_tick,4);
+	}
+	else if(page == 3)       //密码正确页
+	{
+		LCD_WriteCommand(0x0C);//关光标
+		LCD_ShowString(1,6,"RIGHT");
+	}	
+	
+	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
+	{
+		Delay(300);
+		Lcd_Clear();
+		page = 0;
 	}
 	
 	//LCD_WriteCommand(0x80+cursor); //第一行光标
 	LCD_WriteCommand(0xc0+cursor); //第二行光标 
 	
 }
+
+//================Key=======================
 
 void Key_Proc(void)
 {
@@ -110,64 +140,96 @@ void Key_Proc(void)
 			{
 				Lcd_Clear();
 				page = 1;
+				
+				//清空密码字符串
+				for(password_for = 0;password_for <= 5; password_for++)
+				{
+					password[password_for] = '0';
+				}
 			}
 	}
 	
-	switch(key_up)
+	if(key_tick)
 	{
-		case 1:
+		switch(key_up)
 		{
-			LED1 = 1;
-			break;
-		}
-		case 2: 
-		{
-			password[cursor-5] += 1;
-			if(password[cursor-5] > '9')
-				password[cursor-5] = '9';
-		
-			key_tick = 0;
-			break;
-		}
-		case 3:
-		{
-			password[cursor-5] -= 1;
-//			if(password[cursor-5] < 0)
-//				password[cursor-5] = 0;
+			case 1:        //背光/校准按键
+			{
+				LED1 = 1;
+				break;
+			}
+			case 2:        //↑ 
+			{
+				password[cursor-5] += 1;
+				if(password[cursor-5] > '9')
+					password[cursor-5] = '9';
 			
-			key_tick = 0;
-			break;
-		}
-		case 4:
-		{
-			if(--cursor <= 5)
-				cursor = 5;
-			key_tick = 0;
-			break;
-		}
-		case 5:
-		{
-			if(++cursor >= 10)
-				cursor = 10;
-			key_tick = 0;
-			break;
-		}
-		case 6:
-		{
-			LED1 ^= 1;
-			break;
-		}
-		default:
-			break;
- 	}		
+				key_tick = 0;
+				break;
+			}
+			case 3:        //↓
+			{
+				password[cursor-5] -= 1;
+				if(password[cursor-5] == '/')
+					password[cursor-5] = '0';
+				
+				key_tick = 0;
+				break;
+			}
+			case 4:        //←
+			{
+				if(--cursor <= 5)
+					cursor = 5;
+				key_tick = 0;
+				break;
+			}
+			case 5:        //→
+			{
+				if(++cursor >= 10)
+					cursor = 10;
+				key_tick = 0;
+				break;
+			}
+			case 6:        //OK
+			{
+				Lcd_Clear();
+				if(strncmp(password,password_true,6) == 0)
+					page = 3;
+				else
+					page = 2;
+				key_tick = 0;
+				break;
+			}
+			
+			default:
+				break;
+		}		
+	}
+	
 }
 
+//================中断函数=======================
 void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
-	if(++lcd_slow_down == 300) lcd_slow_down = 0;
+	if(++lcd_slow_down == 200) lcd_slow_down = 0;
 	
+	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
+		
 	if(key_tick > 0) key_tick--;
+	
+//	if(page == 2 || page == 3)
+//	{
+//		
+//	}
+	
+	//呼吸灯 用于测试中断
+	if(++led1_tick >= 1000)
+	{
+		LED1 ^= 1;
+		led1_tick = 0;
+	}
+		
 	
 //	if(Buzzer == 0)
 //	{
@@ -178,11 +240,16 @@ void Timer0_Isr(void) interrupt 1
 //			}
 //	}
 	
-	
-				
+		
 //	TL0 = 0x20;				//设置定时初始值
 //	TH0 = 0xD1;				//设置定时初始值
 		
+}
+
+void Delay(unsigned int delay) //定时器延时 会卡住当前函数
+{
+	delay_tick = delay;
+	while(delay_tick > 0);
 }
 
 void Timer0_Init(void)		//1毫秒@11.0592MHz
@@ -195,5 +262,4 @@ void Timer0_Init(void)		//1毫秒@11.0592MHz
 	TR0 = 1;				//定时器0开始计时
 	ET0 = 1;				//使能定时器0中断
 }
-
  
