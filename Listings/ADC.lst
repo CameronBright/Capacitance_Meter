@@ -1,0 +1,66 @@
+C51 COMPILER V9.60.0.0   ADC                                                               11/08/2023 23:17:42 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN .\Objects\ADC.obj
+COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE code\ADC.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\code) DEBUG 
+                    -OBJECTEXTEND PRINT(.\Listings\ADC.lst) TABS(2) OBJECT(.\Objects\ADC.obj)
+
+line level    source
+
+   1          #include "ADC.h"
+   2          #include "Delay.h"
+   3          #include "intrins.h"
+   4          #include <STC12C5A60S2.H>
+   5          //#include "main.h"
+   6          
+   7          /*声明ADC相关寄存器 */
+   8          //sfr ADC_CONTR   =   0xBC;           //ADC 控制寄存器
+   9          //sfr ADC_RES     =   0xBD;           //ADC 高8位结果寄存器
+  10          sfr ADC_LOW2    =   0xBE;           //ADC 低2位结果寄存器
+  11          //sfr P1ASF       =   0x9D;           //P1 辅助控制寄存器
+  12          
+  13          /*ADC操作的一些宏定义*/
+  14          #define ADC_POWER   0x80            //ADC power control bit
+  15          #define ADC_FLAG    0x10            //ADC complete flag
+  16          #define ADC_START   0x08            //ADC start control bit
+  17          #define ADC_SPEEDLL 0x00            //420 clocks
+  18          #define ADC_SPEEDL  0x20            //280 clocks
+  19          #define ADC_SPEEDH  0x40            //140 clocks
+  20          #define ADC_SPEEDHH 0x60            //70 clocks
+  21          
+  22          void ADC_Init(void)
+  23          {
+  24   1          P1ASF = 0x01;                   //开启8路ADC功能
+  25   1          ADC_RES = 0;                    //清楚之前的结果
+  26   1          ADC_CONTR = ADC_POWER | ADC_SPEEDLL;
+  27   1          Delay1ms();                       //ADC上电和延时
+  28   1          Delay1ms();
+  29   1      }
+  30          
+  31          unsigned char GetADCResult(unsigned char ch)
+  32          {
+  33   1        ADC_CONTR = ADC_POWER | ADC_SPEEDLL | ch | ADC_START;
+  34   1        _nop_();            //查询前必须等待
+  35   1        _nop_();
+  36   1        _nop_();
+  37   1        _nop_();
+  38   1        
+  39   1        while (!(ADC_CONTR & ADC_FLAG));//等待完成标志
+  40   1        ADC_CONTR &= ~ADC_FLAG;         //关闭 ADC
+  41   1        return ADC_RES;                 //返回ADC结果
+  42   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     35    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

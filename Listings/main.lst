@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              11/07/2023 20:09:59 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              11/08/2023 23:50:29 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -9,11 +9,11 @@ COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE main.c OPTIMIZE(8
 line level    source
 
    1          /*
-   2          program versions : 2.6.1
+   2          program versions : 3.1
    3          
-   4          完善光标移动功能，密码功能还没做完，但是下班了
+   4          Created ADC function;
    5          
-   6          modification: 2023/11/6 23:11
+   6          modification: 2023/11/7 20:11
    7          
    8          modifier: Cameron Bright
    9          
@@ -23,272 +23,288 @@ line level    source
   13          #include <string.h>
   14          #include "LCD1602.h"  //包含LCD1602头文件
   15          #include "Key.h"      //按键扫描函数
-  16          
-  17          sbit V0 = P1^2;
-  18          
-  19          sbit K1 = P3^7;//继电器 低电平闭合
-  20          sbit K2 = P3^6;
-  21          sbit K3 = P3^5;
-  22          sbit K4 = P3^4;
-  23          
-  24          sbit Buzzer = P2^3;//蜂鸣器 低电平工作
-  25          
-  26          void Timer0_Init(void); //1毫秒@11.0592MHz
-  27          void Delay(unsigned int delay); //定时器延时 
-  28          
-  29          void Key_Proc(void);    //Keystroke process function
-  30          void Lcd_Proc(void);    //LCD Dsiplay process function
-  31          
-  32          unsigned int timer_tick = 0;
-  33          unsigned int buzzer_tick = 0;//用于开机计数500ms
-  34          
-  35          unsigned char key_value; //按键处理变量
-  36          unsigned char key_down;
-  37          unsigned char key_up;
-  38          unsigned char key_old;
-  39          
-  40          unsigned int led1_tick; //状态灯计数
-  41          unsigned int key_tick; //long key press count
-  42          unsigned int delay_tick;//定时器延时计数
-  43          
-  44          unsigned char page = 0;//lcd 显示界面
-  45          unsigned char cursor = 5; //光标
-  46          
-  47          unsigned int key_slow_down = 0; //按键刷新计数
-  48          unsigned int lcd_slow_down = 0; //LCD刷新计数
+  16          #include "ADC.h"
+  17          
+  18          sbit V0 = P1^2;
+  19          
+  20          sbit K1 = P3^7;//继电器 低电平闭合
+  21          sbit K2 = P3^6;
+  22          sbit K3 = P3^5;
+  23          sbit K4 = P3^4;
+  24          
+  25          sbit Buzzer = P2^3;//蜂鸣器 低电平工作
+  26          
+  27          void Timer0_Init(void); //1毫秒@11.0592MHz
+  28          void Delay(unsigned int delay); //定时器延时 
+  29          
+  30          void Key_Proc(void);    //Keystroke process function
+  31          void Lcd_Proc(void);    //LCD Dsiplay process function
+  32          
+  33          unsigned int timer_tick = 0;
+  34          unsigned int buzzer_tick = 0;//用于开机计数500ms
+  35          
+  36          unsigned char key_value; //按键处理变量
+  37          unsigned char key_down;
+  38          unsigned char key_up;
+  39          unsigned char key_old;
+  40          
+  41          unsigned int led1_tick; //状态灯计数
+  42          unsigned int key_tick; //long key press count
+  43          unsigned int delay_tick;//定时器延时计数
+  44          unsigned int cap_tick;  //电容测量计计时
+  45          
+  46          unsigned char dispbuf[4] = {'0','0','0','0'};
+  47          unsigned char page = 0;//lcd 显示界面
+  48          unsigned char cursor = 5; //光标
   49          
-  50          unsigned char password[6] = {'0','0','0','0','0','0'};
-  51          //unsigned char password_true[6] = {'8','7','6','5','4','3'};
-  52          unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
-  53          unsigned char password_for = 0; 
-  54          
-C51 COMPILER V9.60.0.0   MAIN                                                              11/07/2023 20:09:59 PAGE 2   
+  50          unsigned int key_slow_down = 0; //按键刷新计数
+  51          unsigned int lcd_slow_down = 0; //LCD刷新计数
+  52          
+  53          unsigned char password[6] = {'0','0','0','0','0','0'};
+  54          //unsigned char password_true[6] = {'8','7','6','5','4','3'};
+C51 COMPILER V9.60.0.0   MAIN                                                              11/08/2023 23:50:29 PAGE 2   
 
-  55          unsigned int cap_value = 0;
-  56          
-  57          void main()
-  58          {
-  59   1        Timer0_Init();//定时器初始化
-  60   1        
-  61   1        //Buzzer = 0;
-  62   1        LCD_Init();
-  63   1        K2 = 0;
-  64   1        
-  65   1        EA = 1;
-  66   1        
-  67   1        while(1)
-  68   1        { 
-  69   2          Key_Proc();
-  70   2          Lcd_Proc();
-  71   2        }
-  72   1        
-  73   1      }
-  74          
-  75          //================LCD=======================
-  76          
-  77          void Lcd_Proc(void)     //LCD Dsiplay process function
-  78          {
-  79   1        if(lcd_slow_down) return;   //10ms更新一次
-  80   1          lcd_slow_down = 1;
-  81   1        
-  82   1        if(page == 0)            //测量界面 初始界面
-  83   1        {
-  84   2          LCD_WriteCommand(0x0C);//关光标
-  85   2          
-  86   2          LCD_ShowString(1,1,"Press OK Start!");
-  87   2        
-  88   2          LCD_ShowNum(2,1,cap_value,4);
-  89   2          LCD_ShowNum(2,8,key_tick,4);
-  90   2        }
-  91   1        else if(page == 1)       //输密码页
-  92   1        {
-  93   2          LCD_WriteCommand(0x0f);//开光标
+  55          unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
+  56          unsigned char password_for = 0; 
+  57          
+  58          unsigned char capvalue_char;
+  59          float capvalue_float;
+  60          
+  61          
+  62          void main()
+  63          {
+  64   1        Timer0_Init();//定时器初始化
+  65   1        LCD_Init(); //LCD函数初始化
+  66   1        ADC_Init(); //ADC函数初始化
+  67   1        
+  68   1        //Buzzer = 0;//蜂鸣器初始化
+  69   1        
+  70   1        K1 = 1;
+  71   1      //  K2 = 0;
+  72   1      //  K3 = 1;
+  73   1      //  K4 = 0;
+  74   1        
+  75   1        while(1)
+  76   1        { 
+  77   2          Key_Proc();
+  78   2          Lcd_Proc();
+  79   2        }
+  80   1        
+  81   1      }
+  82          
+  83          //================LCD=======================
+  84          
+  85          void Lcd_Proc(void)     //LCD Dsiplay process function
+  86          {
+  87   1        if(lcd_slow_down) return;   //10ms更新一次
+  88   1          lcd_slow_down = 1;
+  89   1        
+  90   1        if(page == 0)            //测量界面 初始界面
+  91   1        {
+  92   2          capvalue_char = GetADCResult(0);
+  93   2          capvalue_float = (float)capvalue_char/51.0;
   94   2          
-  95   2          LCD_ShowString(1,2,"Input Password");
-  96   2          LCD_ShowString(2,6,password);
-  97   2        }
-  98   1        else if(page == 2)       //密码错误页
-  99   1        {
+  95   2          dispbuf[0] = capvalue_float/100.0;
+  96   2          dispbuf[1] = '.';
+  97   2          dispbuf[2] = (int)capvalue_float%100/10;
+  98   2          dispbuf[3] = (int)capvalue_float%10;
+  99   2          
  100   2          LCD_WriteCommand(0x0C);//关光标
- 101   2          LCD_ShowString(1,6,"ERROR");
- 102   2          LCD_ShowNum(2,1,delay_tick,4);
- 103   2        }
- 104   1        else if(page == 3)       //密码正确页
- 105   1        {
- 106   2          LCD_WriteCommand(0x0C);//关光标
- 107   2          LCD_ShowString(1,6,"RIGHT");
- 108   2        } 
- 109   1        
- 110   1        if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
- 111   1        {
- 112   2          Delay(300);
- 113   2          Lcd_Clear();
- 114   2          page = 0;
+ 101   2          
+ 102   2          LCD_ShowString(1,1,"Press OK Start!");
+ 103   2          
+ 104   2          LCD_ShowChar(2,1,dispbuf[0]);
+ 105   2          //LCD_ShowString(2,1,dispbuf);
+ 106   2          //LCD_ShowNum(2,1,capvalue_float,4);
+ 107   2          LCD_ShowNum(2,8,key_tick,4);
+ 108   2        }
+ 109   1        else if(page == 1)       //输密码页
+ 110   1        {
+ 111   2          LCD_WriteCommand(0x0f);//开光标
+ 112   2          
+ 113   2          LCD_ShowString(1,2,"Input Password");
+ 114   2          LCD_ShowString(2,6,password);
  115   2        }
- 116   1        
-C51 COMPILER V9.60.0.0   MAIN                                                              11/07/2023 20:09:59 PAGE 3   
+ 116   1        else if(page == 2)       //密码错误页
+C51 COMPILER V9.60.0.0   MAIN                                                              11/08/2023 23:50:29 PAGE 3   
 
- 117   1        //LCD_WriteCommand(0x80+cursor); //第一行光标
- 118   1        LCD_WriteCommand(0xc0+cursor); //第二行光标 
- 119   1        
- 120   1      }
- 121          
- 122          //================Key=======================
- 123          
- 124          void Key_Proc(void)
- 125          {
- 126   1        if(key_slow_down) return;   //10ms更新一次
- 127   1          key_slow_down = 1;
- 128   1        
- 129   1        key_value = Key_Read();
- 130   1        key_down = key_value & (key_value ^ key_old);
- 131   1        key_up = ~key_value & (key_value ^ key_old);
- 132   1        key_old = key_value;
- 133   1      
- 134   1        if(key_down)       //长按五秒
- 135   1          key_tick = 2000;
- 136   1        
- 137   1        if(key_old)
- 138   1        {
- 139   2          if(key_tick == 0)
- 140   2            {
- 141   3              Lcd_Clear();
- 142   3              page = 1;
- 143   3              
- 144   3              //清空密码字符串
- 145   3              for(password_for = 0;password_for <= 5; password_for++)
- 146   3              {
- 147   4                password[password_for] = '0';
- 148   4              }
- 149   3            }
- 150   2        }
- 151   1        
- 152   1        if(key_tick)
- 153   1        {
- 154   2          switch(key_up)
- 155   2          {
- 156   3            case 1:        //背光/校准按键
- 157   3            {
- 158   4              LED1 = 1;
- 159   4              break;
- 160   4            }
- 161   3            case 2:        //↑ 
- 162   3            {
- 163   4              password[cursor-5] += 1;
- 164   4              if(password[cursor-5] > '9')
- 165   4                password[cursor-5] = '9';
- 166   4            
- 167   4              key_tick = 0;
- 168   4              break;
- 169   4            }
- 170   3            case 3:        //↓
- 171   3            {
- 172   4              password[cursor-5] -= 1;
- 173   4              if(password[cursor-5] == '/')
- 174   4                password[cursor-5] = '0';
- 175   4              
- 176   4              key_tick = 0;
- 177   4              break;
- 178   4            }
-C51 COMPILER V9.60.0.0   MAIN                                                              11/07/2023 20:09:59 PAGE 4   
+ 117   1        {
+ 118   2          LCD_WriteCommand(0x0C);//关光标
+ 119   2          LCD_ShowString(1,6,"ERROR");
+ 120   2        }
+ 121   1        else if(page == 3)       //密码正确页
+ 122   1        {
+ 123   2          LCD_WriteCommand(0x0C);//关光标
+ 124   2          LCD_ShowString(1,6,"RIGHT");
+ 125   2        } 
+ 126   1        
+ 127   1        if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
+ 128   1        {
+ 129   2          Delay(2000); //两秒后切换页面
+ 130   2          Lcd_Clear();
+ 131   2          page = 0;   
+ 132   2        }
+ 133   1        
+ 134   1        //LCD_WriteCommand(0x80+cursor); //第一行光标
+ 135   1        LCD_WriteCommand(0xc0+cursor); //第二行光标 
+ 136   1      }
+ 137          
+ 138          //================Key=======================
+ 139          
+ 140          void Key_Proc(void)
+ 141          {
+ 142   1        if(key_slow_down) return;   //10ms更新一次
+ 143   1          key_slow_down = 1;
+ 144   1        
+ 145   1        key_value = Key_Read();
+ 146   1        key_down = key_value & (key_value ^ key_old);
+ 147   1        key_up = ~key_value & (key_value ^ key_old);
+ 148   1        key_old = key_value;
+ 149   1      
+ 150   1        if(key_down)       //长按五秒
+ 151   1          key_tick = 2000;
+ 152   1        
+ 153   1        if(key_old)
+ 154   1        {
+ 155   2          if(key_tick == 0)
+ 156   2            {
+ 157   3              Lcd_Clear();
+ 158   3              page = 1;
+ 159   3              
+ 160   3              //清空密码字符串
+ 161   3              for(password_for = 0;password_for <= 5; password_for++)
+ 162   3              {
+ 163   4                password[password_for] = '0';
+ 164   4              }
+ 165   3            }
+ 166   2        }
+ 167   1        
+ 168   1        if(key_tick)
+ 169   1        {
+ 170   2          switch(key_up)
+ 171   2          {
+ 172   3            case 1:        //背光/校准按键
+ 173   3            {
+ 174   4              K1 ^= 1;
+ 175   4              key_tick = 0;
+ 176   4              break;
+ 177   4            }
+ 178   3            case 2:        //↑ 
+C51 COMPILER V9.60.0.0   MAIN                                                              11/08/2023 23:50:29 PAGE 4   
 
- 179   3            case 4:        //←
- 180   3            {
- 181   4              if(--cursor <= 5)
- 182   4                cursor = 5;
- 183   4              key_tick = 0;
- 184   4              break;
- 185   4            }
- 186   3            case 5:        //→
- 187   3            {
- 188   4              if(++cursor >= 10)
- 189   4                cursor = 10;
- 190   4              key_tick = 0;
- 191   4              break;
- 192   4            }
- 193   3            case 6:        //OK
- 194   3            {
- 195   4              Lcd_Clear();
- 196   4              if(strncmp(password,password_true,6) == 0)
- 197   4                page = 3;
- 198   4              else
- 199   4                page = 2;
+ 179   3            {
+ 180   4              password[cursor-5] += 1;
+ 181   4              if(password[cursor-5] > '9')
+ 182   4                password[cursor-5] = '9';
+ 183   4            
+ 184   4              key_tick = 0;
+ 185   4              break;
+ 186   4            }
+ 187   3            case 3:        //↓
+ 188   3            {
+ 189   4              password[cursor-5] -= 1;
+ 190   4              if(password[cursor-5] == '/')
+ 191   4                password[cursor-5] = '0';
+ 192   4              
+ 193   4              key_tick = 0;
+ 194   4              break;
+ 195   4            }
+ 196   3            case 4:        //←
+ 197   3            {
+ 198   4              if(--cursor <= 5)
+ 199   4                cursor = 5;
  200   4              key_tick = 0;
  201   4              break;
  202   4            }
- 203   3            
- 204   3            default:
- 205   3              break;
- 206   3          }   
- 207   2        }
- 208   1        
- 209   1      }
- 210          
- 211          //================中断函数=======================
- 212          void Timer0_Isr(void) interrupt 1
- 213          {
- 214   1        if(++key_slow_down == 10) key_slow_down = 0;
- 215   1        if(++lcd_slow_down == 200) lcd_slow_down = 0;
- 216   1        
- 217   1        if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
- 218   1          
- 219   1        if(key_tick > 0) key_tick--;
- 220   1        
- 221   1      //  if(page == 2 || page == 3)
- 222   1      //  {
- 223   1      //    
- 224   1      //  }
+ 203   3            case 5:        //→
+ 204   3            {
+ 205   4              if(++cursor >= 10)
+ 206   4                cursor = 10;
+ 207   4              key_tick = 0;
+ 208   4              break;
+ 209   4            }
+ 210   3            case 6:        //OK
+ 211   3            {
+ 212   4              Lcd_Clear();
+ 213   4              if(strncmp(password,password_true,6) == 0)
+ 214   4                page = 3;
+ 215   4              else
+ 216   4                page = 2;
+ 217   4              key_tick = 0;
+ 218   4              break;
+ 219   4            }
+ 220   3            
+ 221   3            default:
+ 222   3              break;
+ 223   3          }   
+ 224   2        }
  225   1        
- 226   1        //呼吸灯 用于测试中断
- 227   1        if(++led1_tick >= 1000)
- 228   1        {
- 229   2          LED1 ^= 1;
- 230   2          led1_tick = 0;
- 231   2        }
- 232   1          
+ 226   1      }
+ 227          
+ 228          //================中断函数=======================
+ 229          void Timer0_Isr(void) interrupt 1
+ 230          {
+ 231   1        if(++key_slow_down == 10) key_slow_down = 0;
+ 232   1        if(++lcd_slow_down == 200) lcd_slow_down = 0;
  233   1        
- 234   1      //  if(Buzzer == 0)
- 235   1      //  {
- 236   1      //    if(++buzzer_tick >= 500)
- 237   1      //      {
- 238   1      //        Buzzer = 1;
- 239   1      //        buzzer_tick = 0;
- 240   1      //      }
-C51 COMPILER V9.60.0.0   MAIN                                                              11/07/2023 20:09:59 PAGE 5   
+ 234   1        if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
+ 235   1        if(key_tick > 0) key_tick--;    //按键计时
+ 236   1        
+ 237   1        if(++cap_tick >= 1000)
+ 238   1        {
+ 239   2          //K1 ^= 1;
+ 240   2      //    K2 ^= 1;
+C51 COMPILER V9.60.0.0   MAIN                                                              11/08/2023 23:50:29 PAGE 5   
 
- 241   1      //  }
- 242   1        
- 243   1          
- 244   1      //  TL0 = 0x20;       //设置定时初始值
- 245   1      //  TH0 = 0xD1;       //设置定时初始值
- 246   1          
- 247   1      }
- 248          
- 249          void Delay(unsigned int delay) //定时器延时 会卡住当前函数
- 250          {
- 251   1        delay_tick = delay;
- 252   1        while(delay_tick > 0);
- 253   1      }
- 254          
- 255          void Timer0_Init(void)    //1毫秒@11.0592MHz
- 256          {
- 257   1        AUXR |= 0x80;     //定时器时钟1T模式
- 258   1        TMOD &= 0xF0;     //设置定时器模式
- 259   1        TL0 = 0xCD;       //设置定时初始值
- 260   1        TH0 = 0xD4;       //设置定时初始值
- 261   1        TF0 = 0;        //清除TF0标志
- 262   1        TR0 = 1;        //定时器0开始计时
- 263   1        ET0 = 1;        //使能定时器0中断
- 264   1      }
- 265           
+ 241   2      //    K3 ^= 1;
+ 242   2      //    K4 ^= 1;
+ 243   2          cap_tick = 0;
+ 244   2        }
+ 245   1        
+ 246   1        //呼吸灯 用于测试中断
+ 247   1        if(++led1_tick >= 1000)
+ 248   1        {
+ 249   2          LED1 ^= 1;
+ 250   2          led1_tick = 0;
+ 251   2        }
+ 252   1          
+ 253   1        
+ 254   1      //  if(Buzzer == 0)
+ 255   1      //  {
+ 256   1      //    if(++buzzer_tick >= 500)
+ 257   1      //      {
+ 258   1      //        Buzzer = 1;
+ 259   1      //        buzzer_tick = 0;
+ 260   1      //      }
+ 261   1      //  }   
+ 262   1      }
+ 263          
+ 264          void Delay(unsigned int delay) //定时器延时 会卡住当前函数
+ 265          {
+ 266   1        delay_tick = delay;
+ 267   1        while(delay_tick > 0);
+ 268   1      }
+ 269          
+ 270          void Timer0_Init(void)    //1毫秒@11.0592MHz
+ 271          {
+ 272   1        AUXR |= 0x80;     //定时器时钟1T模式
+ 273   1        TMOD &= 0xF0;     //设置定时器模式
+ 274   1        TL0 = 0xCD;       //设置定时初始值
+ 275   1        TH0 = 0xD4;       //设置定时初始值
+ 276   1        TF0 = 0;        //清除TF0标志
+ 277   1        TR0 = 1;        //定时器0开始计时
+ 278   1        ET0 = 1;        //使能定时器0中断
+ 279   1        EA = 1;         //总中断
+ 280   1      }
+ 281           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    617    ----
+   CODE SIZE        =    725    ----
    CONSTANT SIZE    =     43    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     35    ----
+   DATA SIZE        =     44    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

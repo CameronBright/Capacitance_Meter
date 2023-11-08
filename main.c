@@ -1,9 +1,10 @@
 /*
-program versions : 3.0
+program versions : 3.1.1
 
-所有除了电容测量的功能全部都已实现
+Created ADC function;
+已经能检测ADC，但是还没能在LCD上显示小数。先下班
 
-modification: 2023/11/7 20:11
+modification: 2023/11/8 23:52
 
 modifier: Cameron Bright
 
@@ -13,6 +14,7 @@ modifier: Cameron Bright
 #include <string.h>
 #include "LCD1602.h"	//包含LCD1602头文件
 #include "Key.h"      //按键扫描函数
+#include "ADC.h"
 
 sbit V0 = P1^2;
 
@@ -40,7 +42,9 @@ unsigned char key_old;
 unsigned int led1_tick; //状态灯计数
 unsigned int key_tick; //long key press count
 unsigned int delay_tick;//定时器延时计数
+unsigned int cap_tick;  //电容测量计计时
 
+unsigned char dispbuf[4] = {'0','0','0','0'};
 unsigned char page = 0;//lcd 显示界面
 unsigned char cursor = 5; //光标
 
@@ -52,17 +56,22 @@ unsigned char password[6] = {'0','0','0','0','0','0'};
 unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
 unsigned char password_for = 0; 
 
-unsigned int cap_value = 0;
+unsigned char capvalue_char;
+float capvalue_float;
+
 
 void main()
 {
 	Timer0_Init();//定时器初始化
+	LCD_Init(); //LCD函数初始化
+	ADC_Init(); //ADC函数初始化
 	
-	//Buzzer = 0;
-	LCD_Init();
-	K2 = 0;
+	//Buzzer = 0;//蜂鸣器初始化
 	
-	EA = 1;
+	K1 = 1;
+//	K2 = 0;
+//	K3 = 1;
+//	K4 = 0;
 	
 	while(1)
 	{	
@@ -81,11 +90,21 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 0)            //测量界面 初始界面
 	{
+		capvalue_char = GetADCResult(0);
+		capvalue_float = (float)capvalue_char/51.0;
+		
+		dispbuf[0] = capvalue_float/100.0;
+		dispbuf[1] = '.';
+		dispbuf[2] = (int)capvalue_float%100/10;
+		dispbuf[3] = (int)capvalue_float%10;
+		
 		LCD_WriteCommand(0x0C);//关光标
 		
 		LCD_ShowString(1,1,"Press OK Start!");
-	
-		LCD_ShowNum(2,1,cap_value,4);
+		
+		LCD_ShowChar(2,1,dispbuf[0]);
+		//LCD_ShowString(2,1,dispbuf);
+		//LCD_ShowNum(2,1,capvalue_float,4);
 		LCD_ShowNum(2,8,key_tick,4);
 	}
 	else if(page == 1)       //输密码页
@@ -99,7 +118,6 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	{
 		LCD_WriteCommand(0x0C);//关光标
 		LCD_ShowString(1,6,"ERROR");
-		LCD_ShowNum(2,1,delay_tick,4);
 	}
 	else if(page == 3)       //密码正确页
 	{
@@ -109,14 +127,13 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
 	{
-		Delay(300);
+		Delay(2000); //两秒后切换页面
 		Lcd_Clear();
-		page = 0;
+		page = 0;		
 	}
 	
 	//LCD_WriteCommand(0x80+cursor); //第一行光标
 	LCD_WriteCommand(0xc0+cursor); //第二行光标 
-	
 }
 
 //================Key=======================
@@ -155,7 +172,8 @@ void Key_Proc(void)
 		{
 			case 1:        //背光/校准按键
 			{
-				LED1 = 1;
+				K1 ^= 1;
+				key_tick = 0;
 				break;
 			}
 			case 2:        //↑ 
@@ -215,13 +233,16 @@ void Timer0_Isr(void) interrupt 1
 	if(++lcd_slow_down == 200) lcd_slow_down = 0;
 	
 	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
-		
-	if(key_tick > 0) key_tick--;
+	if(key_tick > 0) key_tick--;    //按键计时
 	
-//	if(page == 2 || page == 3)
-//	{
-//		
-//	}
+	if(++cap_tick >= 1000)
+	{
+		//K1 ^= 1;
+//		K2 ^= 1;
+//		K3 ^= 1;
+//		K4 ^= 1;
+		cap_tick = 0;
+	}
 	
 	//呼吸灯 用于测试中断
 	if(++led1_tick >= 1000)
@@ -238,12 +259,7 @@ void Timer0_Isr(void) interrupt 1
 //				Buzzer = 1;
 //				buzzer_tick = 0;
 //			}
-//	}
-	
-		
-//	TL0 = 0x20;				//设置定时初始值
-//	TH0 = 0xD1;				//设置定时初始值
-		
+//	}		
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数
@@ -261,5 +277,6 @@ void Timer0_Init(void)		//1毫秒@11.0592MHz
 	TF0 = 0;				//清除TF0标志
 	TR0 = 1;				//定时器0开始计时
 	ET0 = 1;				//使能定时器0中断
+	EA = 1;         //总中断
 }
  

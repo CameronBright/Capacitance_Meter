@@ -396,6 +396,11 @@
               <FileType>1</FileType>
               <FilePath>.\code\Key.c</FilePath>
             </File>
+            <File>
+              <FileName>ADC.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\code\ADC.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
