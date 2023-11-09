@@ -1,10 +1,9 @@
 /*
-program versions : 3.2
+program versions : 3.2.1
 
-Created ADC function;
-已经能检测ADC，并能在LCD上显示小数
+已经能检测电容，但是校验还没有写
 
-modification: 2023/11/9 13:45
+modification: 2023/11/9 20:40
 
 modifier: Cameron Bright
 
@@ -69,9 +68,9 @@ void main()
 	
 	//Buzzer = 0;//蜂鸣器初始化
 	
-//	K1 = 1;
-//	K2 = 0;
-//	K3 = 1;
+	K1 = 1;
+	K2 = 1;
+	K3 = 1;
 	K4 = 1;
 	
 	while(1)
@@ -173,12 +172,13 @@ void Key_Proc(void)
 		{
 			case 1:        //背光/校准按键
 			{
-				K4 ^= 1;
+				K1 ^= 1;
 				key_tick = 0;
 				break;
 			}
 			case 2:        //↑ 
 			{
+				K2 ^= 1;
 				password[cursor-5] += 1;
 				if(password[cursor-5] > '9')
 					password[cursor-5] = '9';
@@ -188,6 +188,7 @@ void Key_Proc(void)
 			}
 			case 3:        //↓
 			{
+				K3 ^= 1;
 				password[cursor-5] -= 1;
 				if(password[cursor-5] == '/')
 					password[cursor-5] = '0';
@@ -197,6 +198,7 @@ void Key_Proc(void)
 			}
 			case 4:        //←
 			{
+				K4 ^= 1;
 				if(--cursor <= 5)
 					cursor = 5;
 				key_tick = 0;
@@ -204,6 +206,7 @@ void Key_Proc(void)
 			}
 			case 5:        //→
 			{
+				K1 = K2 = K3 = K4 = 1;
 				if(++cursor >= 10)
 					cursor = 10;
 				key_tick = 0;
