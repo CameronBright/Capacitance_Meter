@@ -1,10 +1,10 @@
 /*
-program versions : 3.1.1
+program versions : 3.2
 
 Created ADC function;
-已经能检测ADC，但是还没能在LCD上显示小数。先下班
+已经能检测ADC，并能在LCD上显示小数
 
-modification: 2023/11/8 23:52
+modification: 2023/11/9 13:45
 
 modifier: Cameron Bright
 
@@ -15,6 +15,7 @@ modifier: Cameron Bright
 #include "LCD1602.h"	//包含LCD1602头文件
 #include "Key.h"      //按键扫描函数
 #include "ADC.h"
+#include <stdio.h>
 
 sbit V0 = P1^2;
 
@@ -68,10 +69,10 @@ void main()
 	
 	//Buzzer = 0;//蜂鸣器初始化
 	
-	K1 = 1;
+//	K1 = 1;
 //	K2 = 0;
 //	K3 = 1;
-//	K4 = 0;
+	K4 = 1;
 	
 	while(1)
 	{	
@@ -90,19 +91,19 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 0)            //测量界面 初始界面
 	{
-		capvalue_char = GetADCResult(0);
-		capvalue_float = (float)capvalue_char/51.0;
+		capvalue_char = GetADCResult(0); //测量P10 ADC
+		capvalue_float = (float)capvalue_char/51;
 		
-		dispbuf[0] = capvalue_float/100.0;
-		dispbuf[1] = '.';
-		dispbuf[2] = (int)capvalue_float%100/10;
-		dispbuf[3] = (int)capvalue_float%10;
+		sprintf((char *)dispbuf,"%3.2f",capvalue_float);
 		
 		LCD_WriteCommand(0x0C);//关光标
 		
 		LCD_ShowString(1,1,"Press OK Start!");
 		
 		LCD_ShowChar(2,1,dispbuf[0]);
+		LCD_ShowChar(2,2,dispbuf[1]);
+		LCD_ShowChar(2,3,dispbuf[2]);
+		LCD_ShowChar(2,4,dispbuf[3]);
 		//LCD_ShowString(2,1,dispbuf);
 		//LCD_ShowNum(2,1,capvalue_float,4);
 		LCD_ShowNum(2,8,key_tick,4);
@@ -172,7 +173,7 @@ void Key_Proc(void)
 		{
 			case 1:        //背光/校准按键
 			{
-				K1 ^= 1;
+				K4 ^= 1;
 				key_tick = 0;
 				break;
 			}
