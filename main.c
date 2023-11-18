@@ -1,9 +1,9 @@
 /*
-program versions : 3.2.1
+program versions : 3.2.2
 
-已经能检测电容，但是校验还没有写
+能初步检测电容，但是ADC测的太慢
 
-modification: 2023/11/18 19:47
+modification: 2023/11/18 21:39
 
 modifier: Cameron Bright
 
@@ -40,11 +40,11 @@ unsigned int timer_tick = 0;
 unsigned int buzzer_tick = 0;//用于开机计数500ms
 
 unsigned char key_value; //按键处理变量
-unsigned char key_down;
-unsigned char key_up;
-unsigned char key_old;
+unsigned char key_down;	 //按键下降沿
+unsigned char key_up;    //上升沿
+unsigned char key_old;   //上次的按键值
 
-unsigned int led1_tick; //状态灯计数
+unsigned int led1_tick = 1; //状态灯计数
 unsigned int key_tick; //long key press count
 unsigned int delay_tick;//定时器延时计数
 unsigned int cap_tick;  //电容测量计计时
@@ -60,11 +60,12 @@ unsigned char password[6] = {'0','0','0','0','0','0'};
 
 unsigned char password_true[6] = {'1','0','0','0','0','0'}; //正确密码
 //unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
-unsigned char password_for = 0; 
+unsigned char password_for = 0; //index
 
-unsigned char capvalue_char;
-float capvalue_float;
-
+unsigned char adc_char;			//adc检测返回的char类型值
+float adc_float;						//adc检测返回的float类型值，就是具体的电压值
+float cap_value;						//存放电容的容值
+char cap_units[2];    //电容的单位
 
 void main()
 {
@@ -92,12 +93,12 @@ void main()
 
 void Lcd_Proc(void)     //LCD Dsiplay process function
 {
-	if(lcd_slow_down) return;   //10ms更新一次
+	if(lcd_slow_down) return;   //200ms刷新一次
 		lcd_slow_down = 1;
 	
 	if(page == 0)            //测量界面 初始界面
 	{	
-		sprintf((char *)dispbuf,"%3.2f",capvalue_float);
+		sprintf((char *)dispbuf,"%3.2f",cap_value);
 		
 		LCD_WriteCommand(0x0C);//关光标
 		
@@ -126,6 +127,11 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	{
 		LCD_WriteCommand(0x0C);//关光标
 		LCD_ShowString(1,6,"RIGHT");
+	}
+	else if(page == 4)
+	{
+		LCD_ShowString(1,1,"Wait...");
+		LCD_ShowString(2,1,"Press OK End");
 	}
 	
 	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
@@ -212,11 +218,26 @@ void Key_Proc(void)
 			}
 			case 6:        //OK
 			{
-				Lcd_Clear();
-				if(strncmp(password,password_true,6) == 0)
-					page = 3;
-				else
-					page = 2;
+				if(page == 0)			 //如果在测量页，按下OK键开始测量
+				{
+					Lcd_Clear();
+					page = 4;
+					K1 = 0;
+				}
+				else if(page == 4) //如果正在测量，按下OK键停止测量
+				{
+					Lcd_Clear();
+					page = 0;
+				}
+				else if(page == 1) //如果在输密码页，按下OK键确认密码
+				{
+					Lcd_Clear();
+					if(strncmp(password,password_true,6) == 0)
+						page = 3;
+					else
+						page = 2;
+				}
+				
 				key_tick = 0;
 				break;
 			}
@@ -233,8 +254,21 @@ void Detection_Proc(void)
 	if(Det_slow_down) return;   //10ms更新一次
 	Det_slow_down = 1;
 	
-	capvalue_char = GetADCResult(0); //测量P10 ADC
-	capvalue_float = (float)capvalue_char/51;//转换成电压值
+	if(page == 4)
+	{
+		Delay(100);
+		adc_char = GetADCResult(0); //测量P10 ADC
+		adc_float = (float)adc_char/51;//转换成电压值
+		
+		if((char)adc_float > 0)
+		{
+			cap_value = adc_float;
+			sprintf(cap_units,"uF");
+			//K1 = 1;
+		}
+			
+	}
+		
 	
 }
 
@@ -243,26 +277,17 @@ void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
 	if(++lcd_slow_down == 200) lcd_slow_down = 0;
-	if(++Det_slow_down == 100) Det_slow_down = 0;
+	if(++Det_slow_down == 10) Det_slow_down = 0;
 	
 	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
 	if(key_tick > 0) key_tick--;    //按键计时
 	
-	if(++cap_tick >= 1000)
-	{
-		//K1 ^= 1;
-//		K2 ^= 1;
-//		K3 ^= 1;
-//		K4 ^= 1;
-		cap_tick = 0;
-	}
-	
 	//呼吸灯 用于测试中断
-	if(++led1_tick >= 1000)
-	{
-		LED1 ^= 1;
-		led1_tick = 0;
-	}
+//	if(++led1_tick >= 1000)
+//	{
+//		LED1 ^= 1;
+//		led1_tick = 0;
+//	}
 		
 	
 //	if(Buzzer == 0)
