@@ -28,8 +28,13 @@ sbit Buzzer = P2^3;//蜂鸣器 低电平工作
 void Timer0_Init(void);	//1毫秒@11.0592MHz
 void Delay(unsigned int delay); //定时器延时 
 
-void Key_Proc(void);    //Keystroke process function
-void Lcd_Proc(void);    //LCD Dsiplay process function
+void Key_Proc(void);   	   //Keystroke process function
+void Lcd_Proc(void);  	   //LCD Dsiplay process function
+void Detection_Proc(void); //cap detection process function
+
+unsigned int key_slow_down = 0; //按键刷新计数
+unsigned int lcd_slow_down = 0; //LCD刷新计数
+unsigned int Det_slow_down = 0; //adc检测刷新计数
 
 unsigned int timer_tick = 0;
 unsigned int buzzer_tick = 0;//用于开机计数500ms
@@ -48,12 +53,13 @@ unsigned char dispbuf[4] = {'0','0','0','0'};
 unsigned char page = 0;//lcd 显示界面
 unsigned char cursor = 5; //光标
 
-unsigned int key_slow_down = 0; //按键刷新计数
-unsigned int lcd_slow_down = 0; //LCD刷新计数
+
 
 unsigned char password[6] = {'0','0','0','0','0','0'};
 //unsigned char password_true[6] = {'8','7','6','5','4','3'};
-unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
+
+unsigned char password_true[6] = {'1','0','0','0','0','0'}; //正确密码
+//unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
 unsigned char password_for = 0; 
 
 unsigned char capvalue_char;
@@ -77,6 +83,7 @@ void main()
 	{	
 		Key_Proc();
 		Lcd_Proc();
+		Detection_Proc();
 	}
 	
 }
@@ -89,10 +96,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		lcd_slow_down = 1;
 	
 	if(page == 0)            //测量界面 初始界面
-	{
-		capvalue_char = GetADCResult(0); //测量P10 ADC
-		capvalue_float = (float)capvalue_char/51;
-		
+	{	
 		sprintf((char *)dispbuf,"%3.2f",capvalue_float);
 		
 		LCD_WriteCommand(0x0C);//关光标
@@ -103,9 +107,8 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,2,dispbuf[1]);
 		LCD_ShowChar(2,3,dispbuf[2]);
 		LCD_ShowChar(2,4,dispbuf[3]);
-		//LCD_ShowString(2,1,dispbuf);
-		//LCD_ShowNum(2,1,capvalue_float,4);
-		LCD_ShowNum(2,8,key_tick,4);
+		
+		//LCD_ShowNum(2,8,key_tick,4); //测试按键长按
 	}
 	else if(page == 1)       //输密码页
 	{
@@ -123,13 +126,13 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	{
 		LCD_WriteCommand(0x0C);//关光标
 		LCD_ShowString(1,6,"RIGHT");
-	}	
+	}
 	
 	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
 	{
 		Delay(2000); //两秒后切换页面
 		Lcd_Clear();
-		page = 0;		
+		page = 0;//密码输完后切换到校准页面		
 	}
 	
 	//LCD_WriteCommand(0x80+cursor); //第一行光标
@@ -172,13 +175,11 @@ void Key_Proc(void)
 		{
 			case 1:        //背光/校准按键
 			{
-				K1 ^= 1;
 				key_tick = 0;
 				break;
 			}
 			case 2:        //↑ 
 			{
-				K2 ^= 1;
 				password[cursor-5] += 1;
 				if(password[cursor-5] > '9')
 					password[cursor-5] = '9';
@@ -188,7 +189,6 @@ void Key_Proc(void)
 			}
 			case 3:        //↓
 			{
-				K3 ^= 1;
 				password[cursor-5] -= 1;
 				if(password[cursor-5] == '/')
 					password[cursor-5] = '0';
@@ -198,7 +198,6 @@ void Key_Proc(void)
 			}
 			case 4:        //←
 			{
-				K4 ^= 1;
 				if(--cursor <= 5)
 					cursor = 5;
 				key_tick = 0;
@@ -206,7 +205,6 @@ void Key_Proc(void)
 			}
 			case 5:        //→
 			{
-				K1 = K2 = K3 = K4 = 1;
 				if(++cursor >= 10)
 					cursor = 10;
 				key_tick = 0;
@@ -230,11 +228,22 @@ void Key_Proc(void)
 	
 }
 
+void Detection_Proc(void)
+{
+	if(Det_slow_down) return;   //10ms更新一次
+	Det_slow_down = 1;
+	
+	capvalue_char = GetADCResult(0); //测量P10 ADC
+	capvalue_float = (float)capvalue_char/51;//转换成电压值
+	
+}
+
 //================中断函数=======================
 void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
 	if(++lcd_slow_down == 200) lcd_slow_down = 0;
+	if(++Det_slow_down == 100) Det_slow_down = 0;
 	
 	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
 	if(key_tick > 0) key_tick--;    //按键计时
