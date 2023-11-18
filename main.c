@@ -3,7 +3,7 @@ program versions : 3.2.1
 
 已经能检测电容，但是校验还没有写
 
-modification: 2023/11/9 20:40
+modification: 2023/11/18 19:47
 
 modifier: Cameron Bright
 
