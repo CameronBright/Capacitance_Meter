@@ -1,9 +1,9 @@
 /*
-program versions : 2.3.1
+program versions : 2.3.2
 
-此版本可以自动切换继电器，但无法判断电容的单位，并且只能检测22uF
+此版本能测试电容，但5uf以上和pf级别的还测不出
 
-modification: 2023/11/19 17:44
+modification: 2023/11/19 22:05
 
 modifier: Cameron Bright
 
@@ -44,7 +44,7 @@ unsigned int delay_tick;//定时器延时计数
 unsigned int cap_tick;  //电容测量计计时
 unsigned int relay_tick = 0;//继电器计时
 
-unsigned char dispbuf[4] = {'0','0','0','0'};
+unsigned char dispbuf[6] = {'0','0','0','0','0','0'};
 unsigned char page = 0;//lcd 显示界面
 unsigned char cursor = 5; //光标
 
@@ -95,7 +95,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	
 	if(page == 0)            //测量界面 初始界面
 	{	
-		sprintf((char *)dispbuf,"%3.2f",cap_value);
+		sprintf((char *)dispbuf,"%06.2f",cap_value);
 		
 		LCD_WriteCommand(0x0C);//关光标
 		
@@ -105,17 +105,19 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,2,dispbuf[1]);
 		LCD_ShowChar(2,3,dispbuf[2]);
 		LCD_ShowChar(2,4,dispbuf[3]);
+		LCD_ShowChar(2,5,dispbuf[4]);
+		LCD_ShowChar(2,6,dispbuf[5]);
 		
 		switch(cap_units)
 		{
 			case 0:
-				LCD_ShowString(2,5,"uF");
+				LCD_ShowString(2,7,"uF");
 				break;
 			case 1:
-				LCD_ShowString(2,6,"nF");
+				LCD_ShowString(2,7,"nF");
 				break;
 			case 2:
-				LCD_ShowString(2,5,"pF");
+				LCD_ShowString(2,7,"pF");
 				break;
 			default:
 				break;
@@ -241,7 +243,37 @@ void Key_Proc(void)
 					Lcd_Clear();
 					page = 0;
 					
+				if(cap_value_k1 < 2.20 && cap_value_k1 > 0.10)
+				{
 					cap_value = cap_value_k1;
+					cap_units = 0;           //单位换成uF
+				}
+				else if(cap_value_k1 <= 0.10)
+				{
+					cap_value = cap_value_k2 * 100;
+					cap_units = 1;           //单位换成nF
+				}
+				else if(cap_value_k2 <= 0.10)
+				{
+					cap_value = cap_value_k3 * 10;
+					cap_units = 2;           //单位换成nF
+				}
+					
+//					if((char)cap_value_k1 != 0)//看一下个位数有没有值
+//					{
+//						cap_value = cap_value_k1;
+//						cap_units = 0;           //单位换成uF
+//					}else if((char)cap_value_k1 == 0 && (char)cap_value_k2 != 0) //k1测不到就换k2的值
+//					{
+//						cap_value = cap_value_k2;
+//						cap_units = 1;           //单位换成nF
+//					}else if((char)cap_value_k1 == 0 && (char)cap_value_k2 == 0 && (char)cap_value_k3 != 0) //k1测不到就换k3的值
+//					{
+//						cap_value = cap_value_k3;
+//						cap_units = 2;           //单位换成pF
+//					}
+					
+					
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
