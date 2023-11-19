@@ -65,7 +65,7 @@ unsigned char password_for = 0; //index
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 float cap_value;						//存放电容的容值
-char cap_units[2];    //电容的单位
+char cap_units;    					//电容的单位0:uF、1:nF、 2:pF
 
 void main()
 {
@@ -108,6 +108,21 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,2,dispbuf[1]);
 		LCD_ShowChar(2,3,dispbuf[2]);
 		LCD_ShowChar(2,4,dispbuf[3]);
+		
+		switch(cap_units)
+		{
+			case 0:
+				LCD_ShowString(2,5,"uF");
+				break;
+			case 1:
+				LCD_ShowString(2,6,"nF");
+				break;
+			case 2:
+				LCD_ShowString(2,5,"pF");
+				break;
+			default:
+				break;
+		}
 		
 		//LCD_ShowNum(2,8,key_tick,4); //测试按键长按
 	}
@@ -256,15 +271,14 @@ void Detection_Proc(void)
 	
 	if(page == 4)
 	{
-		Delay(100);
 		adc_char = GetADCResult(0); //测量P10 ADC
 		adc_float = (float)adc_char/51;//转换成电压值
 		
 		if((char)adc_float > 0)
 		{
 			cap_value = adc_float;
-			sprintf(cap_units,"uF");
-			//K1 = 1;
+			cap_units = 0;  //units：uF
+			K1 = 1;
 		}
 			
 	}
