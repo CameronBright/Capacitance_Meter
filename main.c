@@ -1,9 +1,9 @@
 /*
-program versions : 3.2.3
+program versions : 2.3.1
 
-重写了继电器控制函数，更换电容测量方法
+此版本可以自动切换继电器，但无法判断电容的单位，并且只能检测22uF
 
-modification: 2023/11/19 15:58
+modification: 2023/11/19 17:44
 
 modifier: Cameron Bright
 
@@ -50,8 +50,6 @@ unsigned char cursor = 5; //光标
 
 unsigned char relay_index;  //继电器选择
 
-
-
 unsigned char password[6] = {'0','0','0','0','0','0'};
 //unsigned char password_true[6] = {'8','7','6','5','4','3'};
 
@@ -61,6 +59,12 @@ unsigned char password_for = 0; //index
 
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
+
+xdata float cap_value_k1;         
+xdata float cap_value_k2;
+xdata float cap_value_k3;
+xdata float cap_value_k4;
+
 float cap_value;						//存放电容的容值
 char cap_units;    					//电容的单位0:uF、1:nF、 2:pF
 
@@ -78,9 +82,8 @@ void main()
 	{	
 		Key_Proc();
 		Lcd_Proc();
-		Detection_Proc();
+		Detection_Proc(); 
 	}
-	
 }
 
 //================LCD=======================
@@ -237,7 +240,8 @@ void Key_Proc(void)
 				{
 					Lcd_Clear();
 					page = 0;
-					//K1 = 1;
+					
+					cap_value = cap_value_k1;
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
@@ -256,7 +260,6 @@ void Key_Proc(void)
 				break;
 		}		
 	}
-	
 }
 
 //================电容检测函数======================
@@ -265,10 +268,30 @@ void Detection_Proc(void)
 	if(Det_slow_down) return;   //10ms更新一次
 	Det_slow_down = 1;
 	
+	if(relay_index == 1)
+	{
+		adc_char = GetADCResult(0); //测量P10 ADC
+		cap_value_k1 = (float)adc_char/51;//转换成电压值
+	}
+	else if(relay_index == 2)
+	{
+		adc_char = GetADCResult(0); //测量P10 ADC
+		cap_value_k2 = (float)adc_char/51;//转换成电压值
+	}
+	else if(relay_index == 3)
+	{
+		adc_char = GetADCResult(0); //测量P10 ADC
+		cap_value_k3 = (float)adc_char/51;//转换成电压值
+	}
+	else if(relay_index == 4)
+	{
+		adc_char = GetADCResult(0); //测量P10 ADC
+		cap_value_k4 = (float)adc_char/51;//转换成电压值
+	}
+	
 //	if(page == 4)
 //	{
-//		adc_char = GetADCResult(0); //测量P10 ADC
-//		adc_float = (float)adc_char/51;//转换成电压值
+//		
 //		
 //		if((char)adc_float > 0)
 //		{
@@ -277,8 +300,6 @@ void Detection_Proc(void)
 //		}
 //			
 //	}
-		
-	
 }
 
 //================中断函数=======================
@@ -308,6 +329,9 @@ void Timer0_Isr(void) interrupt 1
 //			}
 //	}		
 
+//---------继电器切换控制----------------------
+	if(page ==  4)
+	{
 		if(++relay_tick > 1000)
 		{
 			if(++relay_index > 4)
@@ -316,6 +340,9 @@ void Timer0_Isr(void) interrupt 1
 		}
 		
 		Relay_Control(relay_index, 1);
+	}		
+		
+	
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数
