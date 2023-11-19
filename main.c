@@ -1,9 +1,9 @@
 /*
-program versions : 3.2.2
+program versions : 3.2.3
 
-能初步检测电容，但是ADC测的太慢
+重写了继电器控制函数，更换电容测量方法
 
-modification: 2023/11/18 21:39
+modification: 2023/11/19 15:58
 
 modifier: Cameron Bright
 
@@ -14,14 +14,8 @@ modifier: Cameron Bright
 #include "LCD1602.h"	//包含LCD1602头文件
 #include "Key.h"      //按键扫描函数
 #include "ADC.h"
+#include "Relay.h"    //继电器头文件
 #include <stdio.h>
-
-sbit V0 = P1^2;
-
-sbit K1 = P3^7;//继电器 低电平闭合
-sbit K2 = P3^6;
-sbit K3 = P3^5;
-sbit K4 = P3^4;
 
 sbit Buzzer = P2^3;//蜂鸣器 低电平工作
 
@@ -48,10 +42,13 @@ unsigned int led1_tick = 1; //状态灯计数
 unsigned int key_tick; //long key press count
 unsigned int delay_tick;//定时器延时计数
 unsigned int cap_tick;  //电容测量计计时
+unsigned int relay_tick = 0;//继电器计时
 
 unsigned char dispbuf[4] = {'0','0','0','0'};
 unsigned char page = 0;//lcd 显示界面
 unsigned char cursor = 5; //光标
+
+unsigned char relay_index;  //继电器选择
 
 
 
@@ -75,10 +72,7 @@ void main()
 	
 	//Buzzer = 0;//蜂鸣器初始化
 	
-	K1 = 1;
-	K2 = 1;
-	K3 = 1;
-	K4 = 1;
+	Relay_Control(0, 0);//继电器全关
 	
 	while(1)
 	{	
@@ -237,12 +231,13 @@ void Key_Proc(void)
 				{
 					Lcd_Clear();
 					page = 4;
-					K1 = 0;
+					//K1 = 0;
 				}
 				else if(page == 4) //如果正在测量，按下OK键停止测量
 				{
 					Lcd_Clear();
 					page = 0;
+					//K1 = 1;
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
@@ -264,24 +259,24 @@ void Key_Proc(void)
 	
 }
 
+//================电容检测函数======================
 void Detection_Proc(void)
 {
 	if(Det_slow_down) return;   //10ms更新一次
 	Det_slow_down = 1;
 	
-	if(page == 4)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		adc_float = (float)adc_char/51;//转换成电压值
-		
-		if((char)adc_float > 0)
-		{
-			cap_value = adc_float;
-			cap_units = 0;  //units：uF
-			K1 = 1;
-		}
-			
-	}
+//	if(page == 4)
+//	{
+//		adc_char = GetADCResult(0); //测量P10 ADC
+//		adc_float = (float)adc_char/51;//转换成电压值
+//		
+//		if((char)adc_float > 0)
+//		{
+//			cap_value = adc_float;
+//			cap_units = 0;  //units：uF
+//		}
+//			
+//	}
 		
 	
 }
@@ -312,6 +307,15 @@ void Timer0_Isr(void) interrupt 1
 //				buzzer_tick = 0;
 //			}
 //	}		
+
+		if(++relay_tick > 1000)
+		{
+			if(++relay_index > 4)
+				relay_index = 1;
+			relay_tick = 0;
+		}
+		
+		Relay_Control(relay_index, 1);
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数

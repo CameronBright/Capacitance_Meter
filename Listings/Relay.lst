@@ -1,0 +1,97 @@
+C51 COMPILER V9.60.0.0   RELAY                                                             11/19/2023 15:46:15 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE RELAY
+OBJECT MODULE PLACED IN .\Objects\Relay.obj
+COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE code\Relay.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\code) DEBU
+                    -G OBJECTEXTEND PRINT(.\Listings\Relay.lst) TABS(2) OBJECT(.\Objects\Relay.obj)
+
+line level    source
+
+   1          #include "Relay.h"
+   2          
+   3          /*
+   4          继电器控制函数
+   5          relay_num: K1-K4选择，1=K1
+   6          status: 0=断开，1=闭合
+   7          */
+   8          void Relay_Control(unsigned char relay_num, bit status)
+   9          {
+  10   1        switch(relay_num)
+  11   1        {
+  12   2          case 0:
+  13   2          {
+  14   3            if(status)
+  15   3              K1 = K2 = K3 = K4 = 0;
+  16   3            else 
+  17   3              K1 = K2 = K3 = K4 = 1;
+  18   3            
+  19   3            break;
+  20   3          }
+  21   2          case 1:
+  22   2          {
+  23   3            if(status)
+  24   3            {
+  25   4              K1 = 0;
+  26   4              K2 = K3 = K4 = 1;
+  27   4            } 
+  28   3            else 
+  29   3              K1 = 1;
+  30   3            
+  31   3            break;
+  32   3          }
+  33   2          case 2:
+  34   2          {
+  35   3            if(status)
+  36   3            {
+  37   4              K2 = 0;
+  38   4              K1 = K3 = K4 = 1;
+  39   4            }
+  40   3            else 
+  41   3              K2 = 1;
+  42   3            
+  43   3            break;
+  44   3          }
+  45   2          case 3:
+  46   2          {
+  47   3            if(status)
+  48   3            {
+  49   4              K3 = 0;
+  50   4              K1 = K2 = K4 = 1;
+  51   4            }
+  52   3            else 
+  53   3              K3 = 1;
+  54   3            
+C51 COMPILER V9.60.0.0   RELAY                                                             11/19/2023 15:46:15 PAGE 2   
+
+  55   3            break;
+  56   3          }
+  57   2          case 4:
+  58   2          {
+  59   3            if(status)
+  60   3            {
+  61   4              K4 = 0;
+  62   4              K1 = K2 = K3 = 1;
+  63   4            }   
+  64   3            else 
+  65   3              K4 = 1;
+  66   3            
+  67   3            break;
+  68   3          }
+  69   2      
+  70   2        }
+  71   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     90    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

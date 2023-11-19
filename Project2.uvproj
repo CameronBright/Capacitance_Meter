@@ -401,6 +401,11 @@
               <FileType>1</FileType>
               <FilePath>.\code\ADC.c</FilePath>
             </File>
+            <File>
+              <FileName>Relay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\code\Relay.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
