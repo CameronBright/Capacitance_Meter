@@ -1,9 +1,9 @@
 /*
-program versions : 2.3.2
+program versions : 2.4.1
 
-此版本能测试电容，但5uf以上和pf级别的还测不出
+此版本已能正常测试电容，题目给出的电容都已经能检测了
 
-modification: 2023/11/19 22:05
+modification: 2023/11/20 14:02
 
 modifier: Cameron Bright
 
@@ -248,17 +248,26 @@ void Key_Proc(void)
 					cap_value = cap_value_k1;
 					cap_units = 0;           //单位换成uF
 				}
-				else if(cap_value_k1 <= 0.10)
+				else if(cap_value_k1 <= 0.10 && cap_value_k2 > 0.10)
 				{
 					cap_value = cap_value_k2 * 100;
 					cap_units = 1;           //单位换成nF
 				}
-				else if(cap_value_k2 <= 0.10)
+				else if(cap_value_k2 <= 0.10 && cap_value_k3 > 0.10)
 				{
 					cap_value = cap_value_k3 * 10;
-					cap_units = 2;           //单位换成nF
+					cap_units = 1;           //单位换成nF
 				}
-					
+				else if(cap_value_k3 <= 0.10 && cap_value_k4 > 0.00)
+				{
+					cap_value = cap_value_k4;
+					cap_units = 1;
+				}
+//				else if(cap_value_k3 <= 0.10 && cap_value_k4 > 0.00)
+//				{
+//					cap_value = cap_value_k3 * 10;
+//					cap_units = 1;
+//				}
 //					if((char)cap_value_k1 != 0)//看一下个位数有没有值
 //					{
 //						cap_value = cap_value_k1;
