@@ -1,6 +1,7 @@
 /*
 program versions : 2.4.1
 
+此分支[branch1]用于编写主代码
 此版本已能正常测试电容，题目给出的电容都已经能检测了.
 
 modification: 2023/11/20 14:02
@@ -243,26 +244,28 @@ void Key_Proc(void)
 					Lcd_Clear();
 					page = 0;
 					
-				if(cap_value_k1 < 2.20 && cap_value_k1 > 0.10)
+				if(cap_value_k1 < 2.20 && cap_value_k1 > 0.50)
 				{
 					cap_value = cap_value_k1;
 					cap_units = 0;           //单位换成uF
 				}
-				else if(cap_value_k1 <= 0.10 && cap_value_k2 > 0.10)
+				else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)
 				{
 					cap_value = cap_value_k2 * 100;
 					cap_units = 1;           //单位换成nF
 				}
-				else if(cap_value_k2 <= 0.10 && cap_value_k3 > 0.10)
+				else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)
 				{
 					cap_value = cap_value_k3 * 10;
 					cap_units = 1;           //单位换成nF
 				}
-				else if(cap_value_k3 <= 0.10 && cap_value_k4 > 0.00)
+				else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)
 				{
 					cap_value = cap_value_k4;
 					cap_units = 1;
 				}
+				
+				cap_value_k1 = cap_value_k2 = cap_value_k3 = cap_value_k4 = 0;
 //				else if(cap_value_k3 <= 0.10 && cap_value_k4 > 0.00)
 //				{
 //					cap_value = cap_value_k3 * 10;
