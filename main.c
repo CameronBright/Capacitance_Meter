@@ -1,12 +1,13 @@
 /*
 program versions : 3.1.1
 
-此分支[branch1]用于编写测量代码
+此分支[branch2]用于编写校验代码
 
 Descrription: 新增了分支"branch1用于修改测量功能的代码"
 
 updata record:
-修改了测量功能代码，现在已经能测量50uF-220pF
+修改了检测功能的代码，测量22nf时不再显示22333pF(单位换算)
+新增了校验的功能代码以及校验页面
 
 modification: 2023/12/14 16:00
 
@@ -65,10 +66,13 @@ unsigned char password_for = 0; //index
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 
-xdata float cap_value_k1;         
-xdata float cap_value_k2;
-xdata float cap_value_k3;
-xdata float cap_value_k4;
+xdata float cap_value_k1 = 0;         
+xdata float cap_value_k2 = 0;
+xdata float cap_value_k3 = 0;
+xdata float cap_value_k4 = 0;
+
+xdata float cap_calibration[6] = {0,0,0,0,0,0};//校验值
+xdata float cap_calibration_buf = 0;
 
 float cap_value;						//存放电容的容值
 char cap_units;    					//电容的单位0:uF、1:nF、 2:pF
@@ -151,6 +155,10 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	{
 		LCD_ShowString(1,1,"Wait...");
 		LCD_ShowString(2,1,"Press OK End");
+	}
+	else if(page == 5)       //校准页
+	{
+		
 	}
 	
 	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
@@ -271,7 +279,13 @@ void Key_Proc(void)
 					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)//测量5000pF-0pF
 					{
 						cap_value = cap_value_k4 * 10000;
-						cap_units = 2;           //单位换成pF
+						if(cap_value >= 10000)
+						{
+							cap_value = cap_value / 1000.0;
+							cap_units = 1;           //单位换成nF
+						}
+						else 
+							cap_units = 2;           //单位换成pF
 					}
 			
 				}

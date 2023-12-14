@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -9,14 +9,14 @@ COMPILER INVOKED BY: D:\WorkSoftware\Keil5_C51\C51\BIN\C51.EXE main.c OPTIMIZE(8
 line level    source
 
    1          /*
-   2          program versions : 2.4.2
+   2          program versions : 3.1.1
    3          
-   4          此分支[branch1_1_1]用于编写测量代码
+   4          此分支[branch2]用于编写校验代码
    5          
-   6          Descrription: 新增了分支"branch1_1_1用于修改测量功能的代码"
+   6          Descrription: 新增了分支"branch1用于修改测量功能的代码"
    7          
-   8          更新日志
-   9          修改了测量功能代码，现在已经能测量50uF-220pF
+   8          updata record:
+   9          修改了检测功能的代码，测量22nf时不再显示22333pF(单位换算)
   10          
   11          modification: 2023/12/14 16:00
   12          
@@ -62,7 +62,7 @@ line level    source
   52          unsigned char dispbuf[6] = {'0','0','0','0','0','0'};
   53          unsigned char page = 0;//lcd 显示界面
   54          unsigned char cursor = 5; //光标
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 2   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 2   
 
   55          
   56          unsigned char relay_index;  //继电器选择
@@ -77,340 +77,349 @@ line level    source
   65          unsigned char adc_char;     //adc检测返回的char类型值
   66          float adc_float;            //adc检测返回的float类型值，就是具体的电压值
   67          
-  68          xdata float cap_value_k1;         
-  69          xdata float cap_value_k2;
-  70          xdata float cap_value_k3;
-  71          xdata float cap_value_k4;
+  68          xdata float cap_value_k1 = 0;         
+  69          xdata float cap_value_k2 = 0;
+  70          xdata float cap_value_k3 = 0;
+  71          xdata float cap_value_k4 = 0;
   72          
-  73          float cap_value;            //存放电容的容值
-  74          char cap_units;             //电容的单位0:uF、1:nF、 2:pF
+  73          xdata float cap_calibration[6] = {0,0,0,0,0,0};//校验值
+  74          xdata float cap_calibration_buf = 0;
   75          
-  76          void main()
-  77          {
-  78   1        Timer0_Init();//定时器初始化
-  79   1        LCD_Init(); //LCD函数初始化
-  80   1        ADC_Init(); //ADC函数初始化
-  81   1        
-  82   1        //Buzzer = 0;//蜂鸣器初始化
-  83   1        
-  84   1        Relay_Control(0, 0);//继电器全关
-  85   1        
-  86   1        while(1)
-  87   1        { 
-  88   2          Key_Proc();
-  89   2          Lcd_Proc();
-  90   2          Detection_Proc(); 
-  91   2        }
-  92   1      }
-  93          
-  94          //================LCD=======================
-  95          
-  96          void Lcd_Proc(void)     //LCD Dsiplay process function
-  97          {
-  98   1        if(lcd_slow_down) return;   //200ms刷新一次
-  99   1          lcd_slow_down = 1;
- 100   1        
- 101   1        if(page == 0)            //测量界面 初始界面
- 102   1        { 
- 103   2          sprintf((char *)dispbuf,"%06.2f",cap_value);
- 104   2          
- 105   2          LCD_WriteCommand(0x0C);//关光标
- 106   2          
- 107   2          LCD_ShowString(1,1,"Press OK Start!");
- 108   2          
- 109   2          LCD_ShowChar(2,1,dispbuf[0]);
- 110   2          LCD_ShowChar(2,2,dispbuf[1]);
- 111   2          LCD_ShowChar(2,3,dispbuf[2]);
- 112   2          LCD_ShowChar(2,4,dispbuf[3]);
- 113   2          LCD_ShowChar(2,5,dispbuf[4]);
- 114   2          LCD_ShowChar(2,6,dispbuf[5]);
- 115   2          
- 116   2          switch(cap_units)
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 3   
+  76          float cap_value;            //存放电容的容值
+  77          char cap_units;             //电容的单位0:uF、1:nF、 2:pF
+  78          
+  79          void main()
+  80          {
+  81   1        Timer0_Init();//定时器初始化
+  82   1        LCD_Init(); //LCD函数初始化
+  83   1        ADC_Init(); //ADC函数初始化
+  84   1        
+  85   1        //Buzzer = 0;//蜂鸣器初始化
+  86   1        
+  87   1        Relay_Control(0, 0);//继电器全关
+  88   1        
+  89   1        while(1)
+  90   1        { 
+  91   2          Key_Proc();
+  92   2          Lcd_Proc();
+  93   2          Detection_Proc(); 
+  94   2        }
+  95   1      }
+  96          
+  97          //================LCD=======================
+  98          
+  99          void Lcd_Proc(void)     //LCD Dsiplay process function
+ 100          {
+ 101   1        if(lcd_slow_down) return;   //200ms刷新一次
+ 102   1          lcd_slow_down = 1;
+ 103   1        
+ 104   1        if(page == 0)            //测量界面 初始界面
+ 105   1        { 
+ 106   2          sprintf((char *)dispbuf,"%06.2f",cap_value);
+ 107   2          
+ 108   2          LCD_WriteCommand(0x0C);//关光标
+ 109   2          
+ 110   2          LCD_ShowString(1,1,"Press OK Start!");
+ 111   2          
+ 112   2          LCD_ShowChar(2,1,dispbuf[0]);
+ 113   2          LCD_ShowChar(2,2,dispbuf[1]);
+ 114   2          LCD_ShowChar(2,3,dispbuf[2]);
+ 115   2          LCD_ShowChar(2,4,dispbuf[3]);
+ 116   2          LCD_ShowChar(2,5,dispbuf[4]);
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 3   
 
- 117   2          {
- 118   3            case 0:
- 119   3              LCD_ShowString(2,7,"uF");
- 120   3              break;
- 121   3            case 1:
- 122   3              LCD_ShowString(2,7,"nF");
+ 117   2          LCD_ShowChar(2,6,dispbuf[5]);
+ 118   2          
+ 119   2          switch(cap_units)
+ 120   2          {
+ 121   3            case 0:
+ 122   3              LCD_ShowString(2,7,"uF");
  123   3              break;
- 124   3            case 2:
- 125   3              LCD_ShowString(2,7,"pF");
+ 124   3            case 1:
+ 125   3              LCD_ShowString(2,7,"nF");
  126   3              break;
- 127   3            default:
- 128   3              break;
- 129   3          }
- 130   2          
- 131   2          //LCD_ShowNum(2,8,key_tick,4); //测试按键长按
- 132   2        }
- 133   1        else if(page == 1)       //输密码页
- 134   1        {
- 135   2          LCD_WriteCommand(0x0f);//开光标
- 136   2          
- 137   2          LCD_ShowString(1,2,"Input Password");
- 138   2          LCD_ShowString(2,6,password);
- 139   2        }
- 140   1        else if(page == 2)       //密码错误页
- 141   1        {
- 142   2          LCD_WriteCommand(0x0C);//关光标
- 143   2          LCD_ShowString(1,6,"ERROR");
- 144   2        }
- 145   1        else if(page == 3)       //密码正确页
- 146   1        {
- 147   2          LCD_WriteCommand(0x0C);//关光标
- 148   2          LCD_ShowString(1,6,"RIGHT");
- 149   2        }
- 150   1        else if(page == 4)
- 151   1        {
- 152   2          LCD_ShowString(1,1,"Wait...");
- 153   2          LCD_ShowString(2,1,"Press OK End");
- 154   2        }
- 155   1        
- 156   1        if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
- 157   1        {
- 158   2          Delay(2000); //两秒后切换页面
- 159   2          Lcd_Clear();
- 160   2          page = 0;//密码输完后切换到校准页面   
- 161   2        }
- 162   1        
- 163   1        //LCD_WriteCommand(0x80+cursor); //第一行光标
- 164   1        LCD_WriteCommand(0xc0+cursor); //第二行光标 
- 165   1      }
- 166          
- 167          //================Key=======================
- 168          
- 169          void Key_Proc(void)
- 170          {
- 171   1        if(key_slow_down) return;   //10ms更新一次
- 172   1          key_slow_down = 1;
- 173   1        
- 174   1        key_value = Key_Read();
- 175   1        key_down = key_value & (key_value ^ key_old);
- 176   1        key_up = ~key_value & (key_value ^ key_old);
- 177   1        key_old = key_value;
- 178   1      
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 4   
+ 127   3            case 2:
+ 128   3              LCD_ShowString(2,7,"pF");
+ 129   3              break;
+ 130   3            default:
+ 131   3              break;
+ 132   3          }
+ 133   2          
+ 134   2          //LCD_ShowNum(2,8,key_tick,4); //测试按键长按
+ 135   2        }
+ 136   1        else if(page == 1)       //输密码页
+ 137   1        {
+ 138   2          LCD_WriteCommand(0x0f);//开光标
+ 139   2          
+ 140   2          LCD_ShowString(1,2,"Input Password");
+ 141   2          LCD_ShowString(2,6,password);
+ 142   2        }
+ 143   1        else if(page == 2)       //密码错误页
+ 144   1        {
+ 145   2          LCD_WriteCommand(0x0C);//关光标
+ 146   2          LCD_ShowString(1,6,"ERROR");
+ 147   2        }
+ 148   1        else if(page == 3)       //密码正确页
+ 149   1        {
+ 150   2          LCD_WriteCommand(0x0C);//关光标
+ 151   2          LCD_ShowString(1,6,"RIGHT");
+ 152   2        }
+ 153   1        else if(page == 4)
+ 154   1        {
+ 155   2          LCD_ShowString(1,1,"Wait...");
+ 156   2          LCD_ShowString(2,1,"Press OK End");
+ 157   2        }
+ 158   1        
+ 159   1        if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
+ 160   1        {
+ 161   2          Delay(2000); //两秒后切换页面
+ 162   2          Lcd_Clear();
+ 163   2          page = 0;//密码输完后切换到校准页面   
+ 164   2        }
+ 165   1        
+ 166   1        //LCD_WriteCommand(0x80+cursor); //第一行光标
+ 167   1        LCD_WriteCommand(0xc0+cursor); //第二行光标 
+ 168   1      }
+ 169          
+ 170          //================Key=======================
+ 171          
+ 172          void Key_Proc(void)
+ 173          {
+ 174   1        if(key_slow_down) return;   //10ms更新一次
+ 175   1          key_slow_down = 1;
+ 176   1        
+ 177   1        key_value = Key_Read();
+ 178   1        key_down = key_value & (key_value ^ key_old);
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 4   
 
- 179   1        if(key_down)       //长按五秒
- 180   1          key_tick = 2000;
- 181   1        
- 182   1        if(key_old)
- 183   1        {
- 184   2          if(key_tick == 0)
- 185   2            {
- 186   3              Lcd_Clear();
- 187   3              page = 1;
- 188   3              
- 189   3              //清空密码字符串
- 190   3              for(password_for = 0;password_for <= 5; password_for++)
- 191   3              {
- 192   4                password[password_for] = '0';
- 193   4              }
- 194   3            }
- 195   2        }
- 196   1        
- 197   1        if(key_tick)
- 198   1        {
- 199   2          switch(key_up)
- 200   2          {
- 201   3            case 1:        //背光/校准按键
- 202   3            {
- 203   4              key_tick = 0;
- 204   4              break;
- 205   4            }
- 206   3            case 2:        //↑ 
- 207   3            {
- 208   4              password[cursor-5] += 1;
- 209   4              if(password[cursor-5] > '9')
- 210   4                password[cursor-5] = '9';
- 211   4            
- 212   4              key_tick = 0;
- 213   4              break;
- 214   4            }
- 215   3            case 3:        //↓
- 216   3            {
- 217   4              password[cursor-5] -= 1;
- 218   4              if(password[cursor-5] == '/')
- 219   4                password[cursor-5] = '0';
- 220   4              
- 221   4              key_tick = 0;
- 222   4              break;
- 223   4            }
- 224   3            case 4:        //←
- 225   3            {
- 226   4              if(--cursor <= 5)
- 227   4                cursor = 5;
- 228   4              key_tick = 0;
- 229   4              break;
- 230   4            }
- 231   3            case 5:        //→
- 232   3            {
- 233   4              if(++cursor >= 10)
- 234   4                cursor = 10;
- 235   4              key_tick = 0;
- 236   4              break;
- 237   4            }
- 238   3            case 6:        //OK
- 239   3            {
- 240   4              if(page == 0)      //如果在测量页，按下OK键开始测量
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 5   
+ 179   1        key_up = ~key_value & (key_value ^ key_old);
+ 180   1        key_old = key_value;
+ 181   1      
+ 182   1        if(key_down)       //长按五秒
+ 183   1          key_tick = 2000;
+ 184   1        
+ 185   1        if(key_old)
+ 186   1        {
+ 187   2          if(key_tick == 0)
+ 188   2            {
+ 189   3              Lcd_Clear();
+ 190   3              page = 1;
+ 191   3              
+ 192   3              //清空密码字符串
+ 193   3              for(password_for = 0;password_for <= 5; password_for++)
+ 194   3              {
+ 195   4                password[password_for] = '0';
+ 196   4              }
+ 197   3            }
+ 198   2        }
+ 199   1        
+ 200   1        if(key_tick)
+ 201   1        {
+ 202   2          switch(key_up)
+ 203   2          {
+ 204   3            case 1:        //背光/校准按键
+ 205   3            {
+ 206   4              key_tick = 0;
+ 207   4              break;
+ 208   4            }
+ 209   3            case 2:        //↑ 
+ 210   3            {
+ 211   4              password[cursor-5] += 1;
+ 212   4              if(password[cursor-5] > '9')
+ 213   4                password[cursor-5] = '9';
+ 214   4            
+ 215   4              key_tick = 0;
+ 216   4              break;
+ 217   4            }
+ 218   3            case 3:        //↓
+ 219   3            {
+ 220   4              password[cursor-5] -= 1;
+ 221   4              if(password[cursor-5] == '/')
+ 222   4                password[cursor-5] = '0';
+ 223   4              
+ 224   4              key_tick = 0;
+ 225   4              break;
+ 226   4            }
+ 227   3            case 4:        //←
+ 228   3            {
+ 229   4              if(--cursor <= 5)
+ 230   4                cursor = 5;
+ 231   4              key_tick = 0;
+ 232   4              break;
+ 233   4            }
+ 234   3            case 5:        //→
+ 235   3            {
+ 236   4              if(++cursor >= 10)
+ 237   4                cursor = 10;
+ 238   4              key_tick = 0;
+ 239   4              break;
+ 240   4            }
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 5   
 
- 241   4              {
- 242   5                Lcd_Clear();
- 243   5                page = 4;
- 244   5              }
- 245   4              else if(page == 4) //如果正在测量，按下OK键停止测量
- 246   4              {
- 247   5                Lcd_Clear();
- 248   5                page = 0;
- 249   5                cap_value = 0;//清零
- 250   5                
- 251   5                if(cap_value_k1 > 5.00)//如果被测电容超过了量程(50uF - 220pF)，就限制在50uF
- 252   5                {
- 253   6                  cap_value = 50.0;
- 254   6                  cap_units = 0;           //单位换成uF
- 255   6                }
- 256   5                if(cap_value_k1 <= 5.00 && cap_value_k1 > 0.50)    //测量50uF-5uF
- 257   5                {
- 258   6                  cap_value = cap_value_k1 * 10;
- 259   6                  cap_units = 0;           //单位换成uF
- 260   6                }
- 261   5                else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)//测量5uF-500nF
- 262   5                {
- 263   6                  cap_value = cap_value_k2;
- 264   6                  cap_units = 0;           //单位换成uF
- 265   6                }
- 266   5                else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-5nF
- 267   5                {
- 268   6                  cap_value = cap_value_k3 * 100;
- 269   6                  cap_units = 1;           //单位换成nF
- 270   6                }
- 271   5                else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)//测量5000pF-0pF
- 272   5                {
- 273   6                  cap_value = cap_value_k4 * 10000;
- 274   6                  cap_units = 2;           //单位换成pF
- 275   6                }
- 276   5            
- 277   5              }
- 278   4              else if(page == 1) //如果在输密码页，按下OK键确认密码
- 279   4              {
- 280   5                Lcd_Clear();
- 281   5                if(strncmp(password,password_true,6) == 0)
- 282   5                  page = 3;
- 283   5                else
- 284   5                  page = 2;
- 285   5              }
- 286   4              
- 287   4              key_tick = 0;
- 288   4              break;
- 289   4            }
- 290   3            
- 291   3            default:
- 292   3              break;
- 293   3          }   
- 294   2        }
- 295   1      }
- 296          
- 297          //================电容检测函数======================
- 298          void Detection_Proc(void)
- 299          {
- 300   1        if(Det_slow_down) return;   //10ms更新一次
- 301   1        Det_slow_down = 1;
- 302   1        
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 6   
+ 241   3            case 6:        //OK
+ 242   3            {
+ 243   4              if(page == 0)      //如果在测量页，按下OK键开始测量
+ 244   4              {
+ 245   5                Lcd_Clear();
+ 246   5                page = 4;
+ 247   5              }
+ 248   4              else if(page == 4) //如果正在测量，按下OK键停止测量
+ 249   4              {
+ 250   5                Lcd_Clear();
+ 251   5                page = 0;
+ 252   5                cap_value = 0;//清零
+ 253   5                
+ 254   5                if(cap_value_k1 > 5.00)//如果被测电容超过了量程(50uF - 220pF)，就限制在50uF
+ 255   5                {
+ 256   6                  cap_value = 50.0;
+ 257   6                  cap_units = 0;           //单位换成uF
+ 258   6                }
+ 259   5                if(cap_value_k1 <= 5.00 && cap_value_k1 > 0.50)    //测量50uF-5uF
+ 260   5                {
+ 261   6                  cap_value = cap_value_k1 * 10;
+ 262   6                  cap_units = 0;           //单位换成uF
+ 263   6                }
+ 264   5                else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)//测量5uF-500nF
+ 265   5                {
+ 266   6                  cap_value = cap_value_k2;
+ 267   6                  cap_units = 0;           //单位换成uF
+ 268   6                }
+ 269   5                else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-5nF
+ 270   5                {
+ 271   6                  cap_value = cap_value_k3 * 100;
+ 272   6                  cap_units = 1;           //单位换成nF
+ 273   6                }
+ 274   5                else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)//测量5000pF-0pF
+ 275   5                {
+ 276   6                  cap_value = cap_value_k4 * 10000;
+ 277   6                  if(cap_value >= 10000)
+ 278   6                  {
+ 279   7                    cap_value = cap_value / 1000.0;
+ 280   7                    cap_units = 1;           //单位换成nF
+ 281   7                  }
+ 282   6                  else 
+ 283   6                    cap_units = 2;           //单位换成pF
+ 284   6                }
+ 285   5            
+ 286   5              }
+ 287   4              else if(page == 1) //如果在输密码页，按下OK键确认密码
+ 288   4              {
+ 289   5                Lcd_Clear();
+ 290   5                if(strncmp(password,password_true,6) == 0)
+ 291   5                  page = 3;
+ 292   5                else
+ 293   5                  page = 2;
+ 294   5              }
+ 295   4              
+ 296   4              key_tick = 0;
+ 297   4              break;
+ 298   4            }
+ 299   3            
+ 300   3            default:
+ 301   3              break;
+ 302   3          }   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 6   
 
- 303   1        if(relay_index == 1)
- 304   1        {
- 305   2          adc_char = GetADCResult(0); //测量P10 ADC
- 306   2          cap_value_k1 = (float)adc_char/51;//转换成电压值
- 307   2        }
- 308   1        else if(relay_index == 2)
- 309   1        {
- 310   2          adc_char = GetADCResult(0); //测量P10 ADC
- 311   2          cap_value_k2 = (float)adc_char/51;//转换成电压值
- 312   2        }
- 313   1        else if(relay_index == 3)
- 314   1        {
- 315   2          adc_char = GetADCResult(0); //测量P10 ADC
- 316   2          cap_value_k3 = (float)adc_char/51;//转换成电压值
- 317   2        }
- 318   1        else if(relay_index == 4)
- 319   1        {
- 320   2          adc_char = GetADCResult(0); //测量P10 ADC
- 321   2          cap_value_k4 = (float)adc_char/51;//转换成电压值
- 322   2        }
- 323   1      }
- 324          
- 325          //================中断函数=======================
- 326          void Timer0_Isr(void) interrupt 1
- 327          {
- 328   1        if(++key_slow_down == 10) key_slow_down = 0;
- 329   1        if(++lcd_slow_down == 200) lcd_slow_down = 0;
- 330   1        if(++Det_slow_down == 10) Det_slow_down = 0;
- 331   1        
- 332   1        if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
- 333   1        if(key_tick > 0) key_tick--;    //按键计时
- 334   1        
- 335   1        //呼吸灯 用于测试中断
- 336   1      //  if(++led1_tick >= 1000)
- 337   1      //  {
- 338   1      //    LED1 ^= 1;
- 339   1      //    led1_tick = 0;
- 340   1      //  }
- 341   1          
- 342   1        
- 343   1      //  if(Buzzer == 0)
- 344   1      //  {
- 345   1      //    if(++buzzer_tick >= 500)
- 346   1      //      {
- 347   1      //        Buzzer = 1;
- 348   1      //        buzzer_tick = 0;
- 349   1      //      }
- 350   1      //  }   
- 351   1      
- 352   1      //---------继电器切换控制----------------------
- 353   1        if(page ==  4)
- 354   1        {
- 355   2          if(++relay_tick > 1000)
- 356   2          {
- 357   3            if(++relay_index > 4)
- 358   3              relay_index = 1;
- 359   3            relay_tick = 0;
- 360   3          }
- 361   2          
- 362   2          Relay_Control(relay_index, 1);
- 363   2        }   
- 364   1          
-C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 18:10:45 PAGE 7   
+ 303   2        }
+ 304   1      }
+ 305          
+ 306          //================电容检测函数======================
+ 307          void Detection_Proc(void)
+ 308          {
+ 309   1        if(Det_slow_down) return;   //10ms更新一次
+ 310   1        Det_slow_down = 1;
+ 311   1        
+ 312   1        if(relay_index == 1)
+ 313   1        {
+ 314   2          adc_char = GetADCResult(0); //测量P10 ADC
+ 315   2          cap_value_k1 = (float)adc_char/51;//转换成电压值
+ 316   2        }
+ 317   1        else if(relay_index == 2)
+ 318   1        {
+ 319   2          adc_char = GetADCResult(0); //测量P10 ADC
+ 320   2          cap_value_k2 = (float)adc_char/51;//转换成电压值
+ 321   2        }
+ 322   1        else if(relay_index == 3)
+ 323   1        {
+ 324   2          adc_char = GetADCResult(0); //测量P10 ADC
+ 325   2          cap_value_k3 = (float)adc_char/51;//转换成电压值
+ 326   2        }
+ 327   1        else if(relay_index == 4)
+ 328   1        {
+ 329   2          adc_char = GetADCResult(0); //测量P10 ADC
+ 330   2          cap_value_k4 = (float)adc_char/51;//转换成电压值
+ 331   2        }
+ 332   1      }
+ 333          
+ 334          //================中断函数=======================
+ 335          void Timer0_Isr(void) interrupt 1
+ 336          {
+ 337   1        if(++key_slow_down == 10) key_slow_down = 0;
+ 338   1        if(++lcd_slow_down == 200) lcd_slow_down = 0;
+ 339   1        if(++Det_slow_down == 10) Det_slow_down = 0;
+ 340   1        
+ 341   1        if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
+ 342   1        if(key_tick > 0) key_tick--;    //按键计时
+ 343   1        
+ 344   1        //呼吸灯 用于测试中断
+ 345   1      //  if(++led1_tick >= 1000)
+ 346   1      //  {
+ 347   1      //    LED1 ^= 1;
+ 348   1      //    led1_tick = 0;
+ 349   1      //  }
+ 350   1          
+ 351   1        
+ 352   1      //  if(Buzzer == 0)
+ 353   1      //  {
+ 354   1      //    if(++buzzer_tick >= 500)
+ 355   1      //      {
+ 356   1      //        Buzzer = 1;
+ 357   1      //        buzzer_tick = 0;
+ 358   1      //      }
+ 359   1      //  }   
+ 360   1      
+ 361   1      //---------继电器切换控制----------------------
+ 362   1        if(page ==  4)
+ 363   1        {
+ 364   2          if(++relay_tick > 1000)
+C51 COMPILER V9.60.0.0   MAIN                                                              12/14/2023 20:56:55 PAGE 7   
 
- 365   1        
- 366   1      }
- 367          
- 368          void Delay(unsigned int delay) //定时器延时 会卡住当前函数
- 369          {
- 370   1        delay_tick = delay;
- 371   1        while(delay_tick > 0);
- 372   1      }
- 373          
- 374          void Timer0_Init(void)    //1毫秒@11.0592MHz
- 375          {
- 376   1        AUXR |= 0x80;     //定时器时钟1T模式
- 377   1        TMOD &= 0xF0;     //设置定时器模式
- 378   1        TL0 = 0xCD;       //设置定时初始值
- 379   1        TH0 = 0xD4;       //设置定时初始值
- 380   1        TF0 = 0;        //清除TF0标志
- 381   1        TR0 = 1;        //定时器0开始计时
- 382   1        ET0 = 1;        //使能定时器0中断
- 383   1        EA = 1;         //总中断
- 384   1      }
- 385           
+ 365   2          {
+ 366   3            if(++relay_index > 4)
+ 367   3              relay_index = 1;
+ 368   3            relay_tick = 0;
+ 369   3          }
+ 370   2          
+ 371   2          Relay_Control(relay_index, 1);
+ 372   2        }   
+ 373   1          
+ 374   1        
+ 375   1      }
+ 376          
+ 377          void Delay(unsigned int delay) //定时器延时 会卡住当前函数
+ 378          {
+ 379   1        delay_tick = delay;
+ 380   1        while(delay_tick > 0);
+ 381   1      }
+ 382          
+ 383          void Timer0_Init(void)    //1毫秒@11.0592MHz
+ 384          {
+ 385   1        AUXR |= 0x80;     //定时器时钟1T模式
+ 386   1        TMOD &= 0xF0;     //设置定时器模式
+ 387   1        TL0 = 0xCD;       //设置定时初始值
+ 388   1        TH0 = 0xD4;       //设置定时初始值
+ 389   1        TF0 = 0;        //清除TF0标志
+ 390   1        TR0 = 1;        //定时器0开始计时
+ 391   1        ET0 = 1;        //使能定时器0中断
+ 392   1        EA = 1;         //总中断
+ 393   1      }
+ 394           
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1399    ----
+   CODE SIZE        =   1446    ----
    CONSTANT SIZE    =     80    ----
-   XDATA SIZE       =     16    ----
+   XDATA SIZE       =     44    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =     56    ----
    IDATA SIZE       =   ----    ----
