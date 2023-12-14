@@ -1,11 +1,11 @@
 /*
 program versions : 3.1.1
 
-此分支[branch1_1_1]用于编写测量代码
+此分支[branch1]用于编写测量代码
 
-Descrription: 新增了分支"branch1_1_1用于修改测量功能的代码"
+Descrription: 新增了分支"branch1用于修改测量功能的代码"
 
-更新日志
+updata record:
 修改了测量功能代码，现在已经能测量50uF-220pF
 
 modification: 2023/12/14 16:00
