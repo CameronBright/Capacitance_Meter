@@ -1,7 +1,7 @@
 /*
 program versions : 2.4.2
 
-此分支[branch2_branch1]用于编写校验代码
+此分支[branch2]用于编写校验代码
 
 Descrription: 需要切换回主分支修改测量代码
 
