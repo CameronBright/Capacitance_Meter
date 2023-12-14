@@ -1,10 +1,10 @@
 /*
 program versions : 2.4.1
 
-此分支[branch1]用于编写主代码
+此分支[branch2]用于编写校验代码
 此版本已能正常测试电容，题目给出的电容都已经能检测了.
 
-modification: 2023/11/20 14:02
+modification: 2023/12/14 15:42
 
 modifier: Cameron Bright
 
