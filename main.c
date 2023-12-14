@@ -1,13 +1,14 @@
 /*
 program versions : 2.4.2
 
-此分支[branch1]用于编写校验代码
+此分支[branch1_1]用于编写测量代码
 
-Descrription: 需要切换回主分支修改测量代码
+Descrription: 新增了分支“branch1_1用于修改测量功能的代码”
+
+更新日志
 
 
-
-modification: 2023/12/14 17:00
+modification: 2023/12/14 17:30
 
 modifier: Cameron Bright
 
