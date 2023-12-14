@@ -1,10 +1,14 @@
 /*
-program versions : 2.4.1
+program versions : 2.4.2
 
-此分支[branch2]用于编写校验代码
-此版本已能正常测试电容，题目给出的电容都已经能检测了.
+此分支[branch2_branch1]用于编写校验代码
 
-modification: 2023/12/14 15:42
+Descrription: 需要切换回主分支修改测量代码
+
+更新日志:
+1 新增了在测量无法测量(量程范围以外)的电容时，测量结果清零
+
+modification: 2023/12/14 17:00
 
 modifier: Cameron Bright
 
@@ -237,55 +241,34 @@ void Key_Proc(void)
 				{
 					Lcd_Clear();
 					page = 4;
-					//K1 = 0;
 				}
 				else if(page == 4) //如果正在测量，按下OK键停止测量
 				{
 					Lcd_Clear();
 					page = 0;
+					cap_value = 0;//清零
 					
-				if(cap_value_k1 < 2.20 && cap_value_k1 > 0.50)
-				{
-					cap_value = cap_value_k1;
-					cap_units = 0;           //单位换成uF
-				}
-				else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)
-				{
-					cap_value = cap_value_k2 * 100;
-					cap_units = 1;           //单位换成nF
-				}
-				else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)
-				{
-					cap_value = cap_value_k3 * 10;
-					cap_units = 1;           //单位换成nF
-				}
-				else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)
-				{
-					cap_value = cap_value_k4;
-					cap_units = 1;
-				}
-				
-				cap_value_k1 = cap_value_k2 = cap_value_k3 = cap_value_k4 = 0;
-//				else if(cap_value_k3 <= 0.10 && cap_value_k4 > 0.00)
-//				{
-//					cap_value = cap_value_k3 * 10;
-//					cap_units = 1;
-//				}
-//					if((char)cap_value_k1 != 0)//看一下个位数有没有值
-//					{
-//						cap_value = cap_value_k1;
-//						cap_units = 0;           //单位换成uF
-//					}else if((char)cap_value_k1 == 0 && (char)cap_value_k2 != 0) //k1测不到就换k2的值
-//					{
-//						cap_value = cap_value_k2;
-//						cap_units = 1;           //单位换成nF
-//					}else if((char)cap_value_k1 == 0 && (char)cap_value_k2 == 0 && (char)cap_value_k3 != 0) //k1测不到就换k3的值
-//					{
-//						cap_value = cap_value_k3;
-//						cap_units = 2;           //单位换成pF
-//					}
-					
-					
+					if(cap_value_k1 < 5.00 && cap_value_k1 > 0.50)
+					{
+						cap_value = cap_value_k1;
+						cap_units = 0;           //单位换成uF
+					}
+					else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)
+					{
+						cap_value = cap_value_k2 * 100;
+						cap_units = 1;           //单位换成nF
+					}
+					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)
+					{
+						cap_value = cap_value_k3 * 10;
+						cap_units = 1;           //单位换成nF
+					}
+					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)
+					{
+						cap_value = cap_value_k4;
+						cap_units = 1;
+					}
+			
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
@@ -332,18 +315,6 @@ void Detection_Proc(void)
 		adc_char = GetADCResult(0); //测量P10 ADC
 		cap_value_k4 = (float)adc_char/51;//转换成电压值
 	}
-	
-//	if(page == 4)
-//	{
-//		
-//		
-//		if((char)adc_float > 0)
-//		{
-//			cap_value = adc_float;
-//			cap_units = 0;  //units：uF
-//		}
-//			
-//	}
 }
 
 //================中断函数=======================
