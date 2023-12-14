@@ -1,15 +1,15 @@
 /*
-program versions : 3.1.1
+program versions : 3.2.1
 
 此分支[branch2]用于编写校验代码
 
-Descrription: 新增了分支"branch1用于修改测量功能的代码"
+Descrription: 修改了检测功能的代码，找回了校验页面的代码
 
 updata record:
 修改了检测功能的代码，测量22nf时不再显示22333pF(单位换算)
 新增了校验的功能代码以及校验页面
 
-modification: 2023/12/14 16:00
+modification: 2023/12/14 21:19
 
 modifier: Cameron Bright
 
@@ -71,8 +71,11 @@ xdata float cap_value_k2 = 0;
 xdata float cap_value_k3 = 0;
 xdata float cap_value_k4 = 0;
 
-xdata float cap_calibration[6] = {0,0,0,0,0,0};//校验值
-xdata float cap_calibration_buf = 0;
+xdata float cap_calibrations_value[9];
+xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
+xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};
+
+unsigned char calibrations = 0; //校准
 
 float cap_value;						//存放电容的容值
 char cap_units;    					//电容的单位0:uF、1:nF、 2:pF
@@ -156,16 +159,33 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowString(1,1,"Wait...");
 		LCD_ShowString(2,1,"Press OK End");
 	}
-	else if(page == 5)       //校准页
+	else if(page == 5)       //校准输入页
 	{
+		LCD_WriteCommand(0x0f);//开光标
+		sprintf((char *)dispbuf,"%06.2f",cap_calibrations_buf);
 		
+		LCD_ShowChar(2,1,dispbuf[0]);
+		LCD_ShowChar(2,2,dispbuf[1]);
+		LCD_ShowChar(2,3,dispbuf[2]);
+		LCD_ShowChar(2,4,dispbuf[3]);
+		LCD_ShowChar(2,5,dispbuf[4]);
+		LCD_ShowChar(2,6,dispbuf[5]);
+		
+		LCD_ShowChar(1,1,calibrations+0x30); //左上角显示校准挡位 +0x30转换成ASC11码输出
+	}
+	else if(page == 6) //校准完成页
+	{
+		LCD_ShowChar(1,1,'A');
+		Delay(2000);
+		Lcd_Clear();
+		page = 0;
 	}
 	
 	if(page == 2 || page == 3) //闪一下ERROR和RIGHT的页面
 	{
 		Delay(2000); //两秒后切换页面
 		Lcd_Clear();
-		page = 0;//密码输完后切换到校准页面		
+		page = 5;//密码输完后切换到校准页面		
 	}
 	
 	//LCD_WriteCommand(0x80+cursor); //第一行光标
@@ -213,33 +233,62 @@ void Key_Proc(void)
 			}
 			case 2:        //↑ 
 			{
-				password[cursor-5] += 1;
-				if(password[cursor-5] > '9')
-					password[cursor-5] = '9';
-			
+				if(page == 1) 	//输密码页
+				{
+					password[cursor-5] += 1;  //按照光标位置加
+					if(password[cursor-5] > '9')
+						password[cursor-5] = '9';
+				}
+				else if(page == 5) //校准页
+				{
+					cap_calibrations_buf += increments[cursor];
+					if(cap_calibrations_buf >= 1000)
+						cap_calibrations_buf -= 1000;
+				}
 				key_tick = 0;
 				break;
 			}
 			case 3:        //↓
 			{
-				password[cursor-5] -= 1;
-				if(password[cursor-5] == '/')
-					password[cursor-5] = '0';
-				
+				if(page == 1)		//输密码页
+				{
+					password[cursor-5] -= 1; //按照光标位置减
+					if(password[cursor-5] == '/')
+						password[cursor-5] = '0';
+				}else if(page == 5)	//校准页
+				{
+					cap_calibrations_buf -= increments[cursor];
+					if(cap_calibrations_buf < 0)
+						cap_calibrations_buf = 0;
+				}
 				key_tick = 0;
 				break;
 			}
 			case 4:        //←
 			{
-				if(--cursor <= 5)
-					cursor = 5;
+				if(page == 1)	  //输密码页
+				{
+					if(--cursor <= 5)
+						cursor = 5;
+				}else if(page == 5)	//校准页
+				{
+					if(--cursor == 255) //光标限位unsigned char类型0-1=255
+						cursor = 0;
+				}
 				key_tick = 0;
 				break;
 			}
 			case 5:        //→
 			{
-				if(++cursor >= 10)
-					cursor = 10;
+				if(page == 1)  //输密码页
+				{
+					if(++cursor >= 10)
+						cursor = 10;
+				}else if(page == 5)	//校准页
+				{
+					if(++cursor > 5)  //光标限位
+						cursor = 5;
+				}
 				key_tick = 0;
 				break;
 			}
@@ -297,7 +346,17 @@ void Key_Proc(void)
 					else
 						page = 2;
 				}
-				
+				else if(page == 5) //如果在校验页面
+				{	
+					cap_calibrations_value[calibrations] = cap_calibrations_buf;//将每一次的校验值储存起来
+					cap_calibrations_buf = 0;//缓冲区清零
+					calibrations += 1;
+					if(calibrations >= 10)
+					{
+						calibrations = 0;
+						page = 6; //跳转到校准完成页
+					}
+				}		
 				key_tick = 0;
 				break;
 			}
