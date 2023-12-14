@@ -1,14 +1,14 @@
 /*
-program versions : 2.4.2
+program versions : 3.1.1
 
-此分支[branch1_1]用于编写测量代码
+此分支[branch1_1_1]用于编写测量代码
 
-Descrription: 新增了分支“branch1_1用于修改测量功能的代码”
+Descrription: 新增了分支"branch1_1_1用于修改测量功能的代码"
 
 更新日志
+修改了测量功能代码，现在已经能测量50uF-220pF
 
-
-modification: 2023/12/14 17:30
+modification: 2023/12/14 16:00
 
 modifier: Cameron Bright
 
@@ -248,25 +248,30 @@ void Key_Proc(void)
 					page = 0;
 					cap_value = 0;//清零
 					
-					if(cap_value_k1 < 5.00 && cap_value_k1 > 0.50)
+					if(cap_value_k1 > 5.00)//如果被测电容超过了量程(50uF - 220pF)，就限制在50uF
 					{
-						cap_value = cap_value_k1;
+						cap_value = 50.0;
 						cap_units = 0;           //单位换成uF
 					}
-					else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)
+					if(cap_value_k1 <= 5.00 && cap_value_k1 > 0.50)    //测量50uF-5uF
 					{
-						cap_value = cap_value_k2 * 100;
+						cap_value = cap_value_k1 * 10;
+						cap_units = 0;           //单位换成uF
+					}
+					else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)//测量5uF-500nF
+					{
+						cap_value = cap_value_k2;
+						cap_units = 0;           //单位换成uF
+					}
+					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-5nF
+					{
+						cap_value = cap_value_k3 * 100;
 						cap_units = 1;           //单位换成nF
 					}
-					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)
+					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)//测量5000pF-0pF
 					{
-						cap_value = cap_value_k3 * 10;
-						cap_units = 1;           //单位换成nF
-					}
-					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)
-					{
-						cap_value = cap_value_k4;
-						cap_units = 1;
+						cap_value = cap_value_k4 * 10000;
+						cap_units = 2;           //单位换成pF
 					}
 			
 				}
