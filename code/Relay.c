@@ -2,20 +2,16 @@
 
 /*
 继电器控制函数
-relay_num: K1-K4选择，1=K1
+relay_num: K1-K4选择，0=全关 1=K1 2=K2 3=K3 4=K4
 status: 0=断开，1=闭合
 */
 void Relay_Control(unsigned char relay_num, bit status)
 {
 	switch(relay_num)
 	{
-		case 0:
+		case 0: //全体关
 		{
-			if(status)
-				K1 = K2 = K3 = K4 = 0;
-			else 
-				K1 = K2 = K3 = K4 = 1;
-			
+			K1 = K2 = K3 = K4 = 1;
 			break;
 		}
 		case 1:
@@ -63,6 +59,15 @@ void Relay_Control(unsigned char relay_num, bit status)
 			}		
 			else 
 				K4 = 1;
+			
+			break;
+		}
+		case 5: //全体控制
+		{
+			if(status)
+				K1 = K2 = K3 = K4 = 0;
+			else 
+				K1 = K2 = K3 = K4 = 1;
 			
 			break;
 		}

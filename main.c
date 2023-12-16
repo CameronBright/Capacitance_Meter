@@ -1,12 +1,9 @@
 /*
-program versions : 3.2.2
+program versions : 3.3.1
 
 此分支[branch2_1]用于编写校验代码
 
-Descrription: 修复了校验界面显示不正确的bug
-
-updata record:
-修复了校验界面显示不正确的bug
+Descrription: 更新了检测功能的代码，现在能测PF级别[继电器挡位增加到5档]
 
 modification: 2023/12/15 20:40
 
@@ -65,10 +62,11 @@ unsigned char password_for = 0; //index
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 
-xdata float cap_value_k1 = 0;         
-xdata float cap_value_k2 = 0;
-xdata float cap_value_k3 = 0;
-xdata float cap_value_k4 = 0;
+xdata float cap_value_k0 = 0; //不开继电器时的测量值
+xdata float cap_value_k1 = 0; //继电器1的测量值
+xdata float cap_value_k2 = 0;	//继电器2的测量值
+xdata float cap_value_k3 = 0;	//继电器3的测量值
+xdata float cap_value_k4 = 0;	//继电器4的测量值
 
 xdata float cap_calibrations_value[6];
 xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
@@ -325,21 +323,20 @@ void Key_Proc(void)
 						cap_value = cap_value_k2;
 						cap_units = 0;           //单位换成uF
 					}
-					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-5nF
+					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-50nF
 					{
 						cap_value = cap_value_k3 * 100;
 						cap_units = 1;           //单位换成nF
 					}
-					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.00)//测量5000pF-0pF
+					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.50)//测量50nF-5nF
 					{
-						cap_value = cap_value_k4 * 10000;
-						if(cap_value >= 10000)
-						{
-							cap_value = cap_value / 1000.0;
-							cap_units = 1;           //单位换成nF
-						}
-						else 
-							cap_units = 2;           //单位换成pF
+						cap_value = cap_value_k4 * 10;
+						cap_units = 1;           //单位换成nF
+					}
+					else if(cap_value_k4 <= 0.50)											//测量5000pF-0pF
+					{
+						cap_value = cap_value_k0;
+						cap_units = 1;           //单位换成nF
 					}
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
@@ -379,7 +376,12 @@ void Detection_Proc(void)
 	if(Det_slow_down) return;   //10ms更新一次
 	Det_slow_down = 1;
 	
-	if(relay_index == 1)
+	if(relay_index == 0)
+	{
+		adc_char = GetADCResult(0); //测量P10 ADC
+		cap_value_k0 = (float)adc_char/51;//转换成电压值
+	}
+	else if(relay_index == 1)
 	{
 		adc_char = GetADCResult(0); //测量P10 ADC
 		cap_value_k1 = (float)adc_char/51;//转换成电压值
@@ -436,41 +438,31 @@ void Timer0_Isr(void) interrupt 1
 		if(++relay_tick > 1000)
 		{
 			if(++relay_index > 4)//relay 继电器控制index1=继电器1
-				relay_index = 1;
+				relay_index = 0;
 			relay_tick = 0;
 		}
 	}
-	
 	else if(page ==  5)
 	{
 		if(calibrations == 0)
 		{
-//			K1 = 0;
-//			K2 = K3 = K4 = 1;
 			relay_index = 1;
 		}	
 		else if(calibrations == 1)
 		{
-//			K2 = 0;
-//			K1 = K3 = K4 = 1;
 			relay_index = 2;
 		}		
 		else if(calibrations == 2)
 		{
-//			K3 = 0;
-//			K1 = K2 = K4 = 1;
 			relay_index = 3;
 		}
 		else if(calibrations == 3)
 		{
-//			K4 = 0;
-//			K1 = K2 = K3 = 1;
 			relay_index = 4;
 		}
-		
-		
-	}	
-		
+	}
+//---------继电器切换控制----------------------	
+	
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数
