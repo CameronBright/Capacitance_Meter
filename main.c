@@ -1,11 +1,11 @@
 /*
 program versions : 3.3.1
 
-此分支[branch2_1]用于编写校验代码
+此分支[branch1]用于编写主代码
 
 Descrription: 更新了检测功能的代码，现在能测PF级别[继电器挡位增加到5档]
 
-modification: 2023/12/15 20:40
+modification: 2023/12/15 21:40
 
 modifier: Cameron Bright
 
