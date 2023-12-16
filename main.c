@@ -1,15 +1,14 @@
 /*
-program versions : 3.2.1
+program versions : 3.2.2
 
-此分支[branch2]用于编写校验代码
+此分支[branch2_1]用于编写校验代码
 
-Descrription: 修改了检测功能的代码，找回了校验页面的代码
+Descrription: 修复了校验界面显示不正确的bug
 
 updata record:
-修改了检测功能的代码，测量22nf时不再显示22333pF(单位换算)
-新增了校验的功能代码以及校验页面
+修复了校验界面显示不正确的bug
 
-modification: 2023/12/14 21:19
+modification: 2023/12/15 20:40
 
 modifier: Cameron Bright
 
@@ -71,9 +70,9 @@ xdata float cap_value_k2 = 0;
 xdata float cap_value_k3 = 0;
 xdata float cap_value_k4 = 0;
 
-xdata float cap_calibrations_value[9];
+xdata float cap_calibrations_value[6];
 xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
-xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};
+xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};//个位数+1、百位数+1....
 
 unsigned char calibrations = 0; //校准
 
@@ -185,7 +184,13 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 	{
 		Delay(2000); //两秒后切换页面
 		Lcd_Clear();
-		page = 5;//密码输完后切换到校准页面		
+		if(page == 2)
+			page = 0;//密码错误输完后切换回测量界面		
+		if(page == 3)
+		{
+			page = 5;//密码正确输完后切换到校准界面
+			cursor = 0;//初始化一下光标位置
+		}	
 	}
 	
 	//LCD_WriteCommand(0x80+cursor); //第一行光标
@@ -336,7 +341,6 @@ void Key_Proc(void)
 						else 
 							cap_units = 2;           //单位换成pF
 					}
-			
 				}
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
@@ -347,15 +351,17 @@ void Key_Proc(void)
 						page = 2;
 				}
 				else if(page == 5) //如果在校验页面
-				{	
+				{
 					cap_calibrations_value[calibrations] = cap_calibrations_buf;//将每一次的校验值储存起来
 					cap_calibrations_buf = 0;//缓冲区清零
 					calibrations += 1;
-					if(calibrations >= 10)
+					
+					if(calibrations > 6 )
 					{
 						calibrations = 0;
 						page = 6; //跳转到校准完成页
 					}
+					
 				}		
 				key_tick = 0;
 				break;
@@ -393,6 +399,8 @@ void Detection_Proc(void)
 		adc_char = GetADCResult(0); //测量P10 ADC
 		cap_value_k4 = (float)adc_char/51;//转换成电压值
 	}
+	
+	Relay_Control(relay_index, 1);//继电器刷新
 }
 
 //================中断函数=======================
@@ -400,7 +408,7 @@ void Timer0_Isr(void) interrupt 1
 {
 	if(++key_slow_down == 10) key_slow_down = 0;
 	if(++lcd_slow_down == 200) lcd_slow_down = 0;
-	if(++Det_slow_down == 10) Det_slow_down = 0;
+	if(++Det_slow_down == 50) Det_slow_down = 0;
 	
 	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
 	if(key_tick > 0) key_tick--;    //按键计时
@@ -427,15 +435,42 @@ void Timer0_Isr(void) interrupt 1
 	{
 		if(++relay_tick > 1000)
 		{
-			if(++relay_index > 4)
+			if(++relay_index > 4)//relay 继电器控制index1=继电器1
 				relay_index = 1;
 			relay_tick = 0;
 		}
-		
-		Relay_Control(relay_index, 1);
-	}		
-		
+	}
 	
+	else if(page ==  5)
+	{
+		if(calibrations == 0)
+		{
+//			K1 = 0;
+//			K2 = K3 = K4 = 1;
+			relay_index = 1;
+		}	
+		else if(calibrations == 1)
+		{
+//			K2 = 0;
+//			K1 = K3 = K4 = 1;
+			relay_index = 2;
+		}		
+		else if(calibrations == 2)
+		{
+//			K3 = 0;
+//			K1 = K2 = K4 = 1;
+			relay_index = 3;
+		}
+		else if(calibrations == 3)
+		{
+//			K4 = 0;
+//			K1 = K2 = K3 = 1;
+			relay_index = 4;
+		}
+		
+		
+	}	
+		
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数
