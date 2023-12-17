@@ -1,11 +1,15 @@
 /*
-program versions : 3.3.1
+program versions : 3.3.3
 
-此分支[branch1]用于编写主代码
+此分支[branch1_1]用于编写主代码
 
-Descrription: 更新了检测功能的代码，现在能测PF级别[继电器挡位增加到5档]
+Descrription: cap_value_k4改成字符串数组
 
-modification: 2023/12/15 21:40
+更新日志:
+1 删除了检测开关det_switch，修复了检测不正常的问题
+cap_value_k改成了字符串数组
+
+modification: 2023/12/17 15:03
 
 modifier: Cameron Bright
 
@@ -62,13 +66,11 @@ unsigned char password_for = 0; //index
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 
-xdata float cap_value_k0 = 0; //不开继电器时的测量值
-xdata float cap_value_k1 = 0; //继电器1的测量值
-xdata float cap_value_k2 = 0;	//继电器2的测量值
-xdata float cap_value_k3 = 0;	//继电器3的测量值
-xdata float cap_value_k4 = 0;	//继电器4的测量值
+xdata float relay_det_value[5]; //relay0 relay1-4
+unsigned char relay_det_index = 0;
 
-xdata float cap_calibrations_value[6];
+xdata float cap_calibrations_input[6];//校准输入值
+xdata float cap_calibrations_value[6];//校准值
 xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
 xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};//个位数+1、百位数+1....
 
@@ -103,7 +105,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		lcd_slow_down = 1;
 	
 	if(page == 0)            //测量界面 初始界面
-	{	
+	{			
 		sprintf((char *)dispbuf,"%06.2f",cap_value);
 		
 		LCD_WriteCommand(0x0C);//关光标
@@ -132,10 +134,9 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 				break;
 		}
 		
-		//LCD_ShowNum(2,8,key_tick,4); //测试按键长按
 	}
 	else if(page == 1)       //输密码页
-	{
+	{	
 		LCD_WriteCommand(0x0f);//开光标
 		
 		LCD_ShowString(1,2,"Input Password");
@@ -157,7 +158,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowString(2,1,"Press OK End");
 	}
 	else if(page == 5)       //校准输入页
-	{
+	{		
 		LCD_WriteCommand(0x0f);//开光标
 		sprintf((char *)dispbuf,"%06.2f",cap_calibrations_buf);
 		
@@ -171,7 +172,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(1,1,calibrations+0x30); //左上角显示校准挡位 +0x30转换成ASC11码输出
 	}
 	else if(page == 6) //校准完成页
-	{
+	{		
 		LCD_ShowChar(1,1,'A');
 		Delay(2000);
 		Lcd_Clear();
@@ -308,34 +309,34 @@ void Key_Proc(void)
 					page = 0;
 					cap_value = 0;//清零
 					
-					if(cap_value_k1 > 5.00)//如果被测电容超过了量程(50uF - 220pF)，就限制在50uF
+					if(relay_det_value[1] > 5.00)//如果被测电容超过了量程(50uF - 220pF)，就限制在50uF
 					{
 						cap_value = 50.0;
 						cap_units = 0;           //单位换成uF
 					}
-					if(cap_value_k1 <= 5.00 && cap_value_k1 > 0.50)    //测量50uF-5uF
+					if(relay_det_value[1] <= 5.00 && relay_det_value[1] > 0.50)    //测量50uF-5uF
 					{
-						cap_value = cap_value_k1 * 10;
+						cap_value = relay_det_value[1] * 10;
 						cap_units = 0;           //单位换成uF
 					}
-					else if(cap_value_k1 <= 0.50 && cap_value_k2 > 0.50)//测量5uF-500nF
+					else if(relay_det_value[1] <= 0.50 && relay_det_value[2] > 0.50)//测量5uF-500nF
 					{
-						cap_value = cap_value_k2;
+						cap_value = relay_det_value[2];
 						cap_units = 0;           //单位换成uF
 					}
-					else if(cap_value_k2 <= 0.50 && cap_value_k3 > 0.50)//测量500nF-50nF
+					else if(relay_det_value[2] <= 0.50 && relay_det_value[3] > 0.50)//测量500nF-50nF
 					{
-						cap_value = cap_value_k3 * 100;
+						cap_value = relay_det_value[3] * 100;
 						cap_units = 1;           //单位换成nF
 					}
-					else if(cap_value_k3 <= 0.50 && cap_value_k4 > 0.50)//测量50nF-5nF
+					else if(relay_det_value[3] <= 0.50 && relay_det_value[4] > 0.50)//测量50nF-5nF
 					{
-						cap_value = cap_value_k4 * 10;
+						cap_value = relay_det_value[4] * 10;
 						cap_units = 1;           //单位换成nF
 					}
-					else if(cap_value_k4 <= 0.50)											//测量5000pF-0pF
+					else if(relay_det_value[4] <= 0.50)											//测量5000pF-0pF
 					{
-						cap_value = cap_value_k0;
+						cap_value = relay_det_value[0];
 						cap_units = 1;           //单位换成nF
 					}
 				}
@@ -349,16 +350,18 @@ void Key_Proc(void)
 				}
 				else if(page == 5) //如果在校验页面
 				{
-					cap_calibrations_value[calibrations] = cap_calibrations_buf;//将每一次的校验值储存起来
+					cap_calibrations_input[calibrations] = cap_calibrations_buf;//将每一次的校验值储存起来
+					//cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - 
 					cap_calibrations_buf = 0;//缓冲区清零
 					calibrations += 1;
 					
-					if(calibrations > 6 )
+					
+					if(calibrations > 6)
 					{
 						calibrations = 0;
+						cap_value = 0;//清零
 						page = 6; //跳转到校准完成页
 					}
-					
 				}		
 				key_tick = 0;
 				break;
@@ -376,33 +379,11 @@ void Detection_Proc(void)
 	if(Det_slow_down) return;   //10ms更新一次
 	Det_slow_down = 1;
 	
-	if(relay_index == 0)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		cap_value_k0 = (float)adc_char/51;//转换成电压值
-	}
-	else if(relay_index == 1)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		cap_value_k1 = (float)adc_char/51;//转换成电压值
-	}
-	else if(relay_index == 2)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		cap_value_k2 = (float)adc_char/51;//转换成电压值
-	}
-	else if(relay_index == 3)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		cap_value_k3 = (float)adc_char/51;//转换成电压值
-	}
-	else if(relay_index == 4)
-	{
-		adc_char = GetADCResult(0); //测量P10 ADC
-		cap_value_k4 = (float)adc_char/51;//转换成电压值
-	}
+	adc_char = GetADCResult(0); //测量P10 ADC
+	relay_det_value[relay_index] = (float)adc_char/51;//转换成电压值
 	
-	Relay_Control(relay_index, 1);//继电器刷新
+
+	Relay_Control(relay_index, 1);//继电器控制函数刷新
 }
 
 //================中断函数=======================
@@ -437,35 +418,37 @@ void Timer0_Isr(void) interrupt 1
 	{
 		if(++relay_tick > 1000)
 		{
-			if(++relay_index > 4)//relay 继电器控制index1=继电器1
+			if(++relay_index > 4)//继电器控制 index1=继电器1
 				relay_index = 0;
 			relay_tick = 0;
 		}
 	}
 	else if(page ==  5)
-	{
-		if(calibrations == 0)
+	{		
+		switch(calibrations)
 		{
-			relay_index = 1;
-		}	
-		else if(calibrations == 1)
-		{
-			relay_index = 2;
-		}		
-		else if(calibrations == 2)
-		{
-			relay_index = 3;
-		}
-		else if(calibrations == 3)
-		{
-			relay_index = 4;
+			case 0: 						//22uF
+				relay_index = 1;
+			break;
+			case 1:							//2.2uF
+				relay_index = 2;
+			break;
+			case 2:							//220nF
+				relay_index = 3;
+			break;
+			case 3:							//22nF
+				relay_index = 4;
+			break;
+			case 4: case 5:			//2.2nF 0.2nF
+				relay_index = 0;
+			break;
 		}
 	}
 //---------继电器切换控制----------------------	
 	
 }
 
-void Delay(unsigned int delay) //定时器延时 会卡住当前函数
+void Delay(unsigned int delay) //定时器延时 会卡住当前函数，但不会影响整个代码
 {
 	delay_tick = delay;
 	while(delay_tick > 0);
