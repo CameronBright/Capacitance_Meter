@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -11,11 +11,11 @@ line level    source
    1          /*
    2          program versions : 3.3.1
    3          
-   4          此分支[branch2_1]用于编写校验代码
+   4          此分支[branch1]用于编写主代码
    5          
    6          Descrription: 更新了检测功能的代码，现在能测PF级别[继电器挡位增加到5档]
    7          
-   8          modification: 2023/12/15 20:40
+   8          modification: 2023/12/15 21:40
    9          
   10          modifier: Cameron Bright
   11          
@@ -62,7 +62,7 @@ line level    source
   52          
   53          unsigned char relay_index;  //继电器选择
   54          
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 2   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 2   
 
   55          unsigned char password[6] = {'0','0','0','0','0','0'};
   56          //unsigned char password_true[6] = {'8','7','6','5','4','3'};
@@ -126,7 +126,7 @@ line level    source
  114   2          LCD_ShowChar(2,2,dispbuf[1]);
  115   2          LCD_ShowChar(2,3,dispbuf[2]);
  116   2          LCD_ShowChar(2,4,dispbuf[3]);
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 3   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 3   
 
  117   2          LCD_ShowChar(2,5,dispbuf[4]);
  118   2          LCD_ShowChar(2,6,dispbuf[5]);
@@ -190,7 +190,7 @@ line level    source
  176   2          Delay(2000);
  177   2          Lcd_Clear();
  178   2          page = 0;
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 4   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 4   
 
  179   2        }
  180   1        
@@ -254,7 +254,7 @@ line level    source
  238   3            {
  239   4              if(page == 1)   //输密码页
  240   4              {
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 5   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 5   
 
  241   5                password[cursor-5] += 1;  //按照光标位置加
  242   5                if(password[cursor-5] > '9')
@@ -318,7 +318,7 @@ line level    source
  300   4              if(page == 0)      //如果在测量页，按下OK键开始测量
  301   4              {
  302   5                Lcd_Clear();
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 6   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 6   
 
  303   5                page = 4;
  304   5              }
@@ -382,7 +382,7 @@ line level    source
  362   5              }   
  363   4              key_tick = 0;
  364   4              break;
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 7   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 7   
 
  365   4            }
  366   3            
@@ -446,7 +446,7 @@ line level    source
  424   1          
  425   1        
  426   1      //  if(Buzzer == 0)
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 8   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 8   
 
  427   1      //  {
  428   1      //    if(++buzzer_tick >= 500)
@@ -510,7 +510,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-C51 COMPILER V9.60.0.0   MAIN                                                              12/16/2023 21:35:18 PAGE 9   
+C51 COMPILER V9.60.0.0   MAIN                                                              12/17/2023 13:51:46 PAGE 9   
 
    CODE SIZE        =   1997    ----
    CONSTANT SIZE    =     80    ----
