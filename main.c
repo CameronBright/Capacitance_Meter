@@ -1,17 +1,14 @@
 /*
-program versions : 3.3.5
+program versions : 4.0.0
 
 此分支[branch1_1]用于编写主代码
 
-Descrription: 编写了校验功能的代码，现在已经能正常校验22uF-22nF 因为修改的地方太多先备份一个版本
+Descrription: 
 
 更新日志:
-1 删除了检测开关det_switch，修复了检测不正常的问题
-2 cap_value_k改成了字符串数组
-3 编写了校验功能的代码，现在已经能正常校验22uF-22nF
+此版本已能正常校准50uF-1nF
 
-
-modification: 2023/12/17 19:14
+modification: 2023/12/17 21:42
 
 modifier: Cameron Bright
 
@@ -68,11 +65,11 @@ unsigned char password_for = 0; //index
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 
-xdata float relay_det_value[5]; //relay0 relay1-4
+xdata float relay_det_value[5] = 0; //relay0 relay1-4
 unsigned char relay_det_index = 0;
 
-xdata float cap_calibrations_input[6] = 0;//校准输入值
-xdata float cap_calibrations_value[6] = 0;//校准值
+xdata float cap_calibrations_input[5] = 0;//校准输入值
+xdata float cap_calibrations_value[5] = 0;//校准值
 xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
 xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};//个位数+1、百位数+1....
 
@@ -121,7 +118,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,5,dispbuf[4]);
 		LCD_ShowChar(2,6,dispbuf[5]);
 		
-		sprintf((char *)dispbuf,"%06.2f",cap_calibrations_value[calibrations]);
+		sprintf((char *)dispbuf,"%06.2f",relay_det_value[0]);
 		LCD_ShowChar(2,10,dispbuf[0]);
 		LCD_ShowChar(2,11,dispbuf[1]);
 		LCD_ShowChar(2,12,dispbuf[2]);
@@ -179,6 +176,18 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,4,dispbuf[3]);
 		LCD_ShowChar(2,5,dispbuf[4]);
 		LCD_ShowChar(2,6,dispbuf[5]);
+		
+		switch(calibrations)//校准时显示的单位
+		{
+			case 0:case 1://校准22uF - 2.2uF
+				LCD_ShowString(2,7,"uF");//单位显示为uF
+				break;
+			case 2:case 3:case 4:case 5://校准220nF - 0.22nF
+				LCD_ShowString(2,7,"nF"); //单位显示为nF
+				break;
+			default:
+				break;
+		}
 		
 		LCD_ShowChar(1,1,calibrations+0x30); //左上角显示校准挡位 +0x30转换成ASC11码输出
 	}
@@ -352,6 +361,12 @@ void Key_Proc(void)
 					else if(relay_det_value[4] <= 0.50)											//测量5000pF-0pF
 					{
 						cap_value = relay_det_value[0];
+						
+						if(cap_value > 1.0)
+							cap_value = cap_value + cap_calibrations_value[4]; //加上误差
+						else
+							cap_value = cap_value + cap_calibrations_value[5]; //加上误差
+						
 						cap_units = 1;           //单位换成nF
 					}
 				}
@@ -380,13 +395,19 @@ void Key_Proc(void)
 						case 3://22nF校准
 							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - (relay_det_value[calibrations+1] * 10.0);
 						break;
+						case 4://2.2nF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - relay_det_value[0];
+						break;
+						case 5://220pF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - relay_det_value[0];
+						break;					
 					}
 					
 					cap_calibrations_buf = 0;//缓冲区清零
 					calibrations += 1;
 					
 					
-					if(calibrations > 6)
+					if(calibrations > 5)
 					{
 						calibrations = 0;
 						cap_value = 0;//清零
@@ -468,8 +489,10 @@ void Timer0_Isr(void) interrupt 1
 			case 3:							//22nF
 				relay_index = 4;
 			break;
-			case 4: case 5:			//2.2nF 0.2nF
+			case 4:case 5:			//2.2nF 0.2nF
 				relay_index = 0;
+			break;
+			default:
 			break;
 		}
 	}
