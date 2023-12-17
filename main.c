@@ -1,15 +1,17 @@
 /*
-program versions : 3.3.3
+program versions : 3.3.5
 
 此分支[branch1_1]用于编写主代码
 
-Descrription: cap_value_k4改成字符串数组
+Descrription: 编写了校验功能的代码，现在已经能正常校验22uF-22nF 因为修改的地方太多先备份一个版本
 
 更新日志:
 1 删除了检测开关det_switch，修复了检测不正常的问题
-cap_value_k改成了字符串数组
+2 cap_value_k改成了字符串数组
+3 编写了校验功能的代码，现在已经能正常校验22uF-22nF
 
-modification: 2023/12/17 15:03
+
+modification: 2023/12/17 19:14
 
 modifier: Cameron Bright
 
@@ -69,8 +71,8 @@ float adc_float;						//adc检测返回的float类型值，就是具体的电压
 xdata float relay_det_value[5]; //relay0 relay1-4
 unsigned char relay_det_index = 0;
 
-xdata float cap_calibrations_input[6];//校准输入值
-xdata float cap_calibrations_value[6];//校准值
+xdata float cap_calibrations_input[6] = 0;//校准输入值
+xdata float cap_calibrations_value[6] = 0;//校准值
 xdata float cap_calibrations_buf = 0; //测量校验值的缓冲区
 xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};//个位数+1、百位数+1....
 
@@ -118,6 +120,15 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,4,dispbuf[3]);
 		LCD_ShowChar(2,5,dispbuf[4]);
 		LCD_ShowChar(2,6,dispbuf[5]);
+		
+		sprintf((char *)dispbuf,"%06.2f",cap_calibrations_value[calibrations]);
+		LCD_ShowChar(2,10,dispbuf[0]);
+		LCD_ShowChar(2,11,dispbuf[1]);
+		LCD_ShowChar(2,12,dispbuf[2]);
+		LCD_ShowChar(2,13,dispbuf[3]);
+		LCD_ShowChar(2,14,dispbuf[4]);
+		LCD_ShowChar(2,15,dispbuf[5]);
+		
 		
 		switch(cap_units)
 		{
@@ -317,21 +328,25 @@ void Key_Proc(void)
 					if(relay_det_value[1] <= 5.00 && relay_det_value[1] > 0.50)    //测量50uF-5uF
 					{
 						cap_value = relay_det_value[1] * 10;
+						cap_value = cap_value + cap_calibrations_value[0]; //加上误差
 						cap_units = 0;           //单位换成uF
 					}
 					else if(relay_det_value[1] <= 0.50 && relay_det_value[2] > 0.50)//测量5uF-500nF
 					{
 						cap_value = relay_det_value[2];
+						cap_value = cap_value + cap_calibrations_value[1]; //加上误差
 						cap_units = 0;           //单位换成uF
 					}
 					else if(relay_det_value[2] <= 0.50 && relay_det_value[3] > 0.50)//测量500nF-50nF
 					{
 						cap_value = relay_det_value[3] * 100;
+						cap_value = cap_value + cap_calibrations_value[2]; //加上误差
 						cap_units = 1;           //单位换成nF
 					}
 					else if(relay_det_value[3] <= 0.50 && relay_det_value[4] > 0.50)//测量50nF-5nF
 					{
 						cap_value = relay_det_value[4] * 10;
+						cap_value = cap_value + cap_calibrations_value[3]; //加上误差
 						cap_units = 1;           //单位换成nF
 					}
 					else if(relay_det_value[4] <= 0.50)											//测量5000pF-0pF
@@ -351,7 +366,22 @@ void Key_Proc(void)
 				else if(page == 5) //如果在校验页面
 				{
 					cap_calibrations_input[calibrations] = cap_calibrations_buf;//将每一次的校验值储存起来
-					//cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - 
+					switch(calibrations)
+					{
+						case 0://22uF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - (relay_det_value[calibrations+1] * 10.0);
+						break;
+						case 1://2.2uF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - relay_det_value[calibrations+1];
+						break;
+						case 2://220nF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - (relay_det_value[calibrations+1] * 100.0);
+						break;
+						case 3://22nF校准
+							cap_calibrations_value[calibrations] = cap_calibrations_input[calibrations] - (relay_det_value[calibrations+1] * 10.0);
+						break;
+					}
+					
 					cap_calibrations_buf = 0;//缓冲区清零
 					calibrations += 1;
 					
@@ -382,7 +412,6 @@ void Detection_Proc(void)
 	adc_char = GetADCResult(0); //测量P10 ADC
 	relay_det_value[relay_index] = (float)adc_char/51;//转换成电压值
 	
-
 	Relay_Control(relay_index, 1);//继电器控制函数刷新
 }
 
