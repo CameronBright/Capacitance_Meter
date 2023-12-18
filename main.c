@@ -1,14 +1,14 @@
 /*
 program versions : 4.0.0
 
-此分支[branch1_1]用于编写主代码
+此分支[branch1]用于编写主程序
 
-Descrription: 
+Descrription: 此版本已能正常校准50uF-1nF，所有功能均实现
 
 更新日志:
 此版本已能正常校准50uF-1nF
 
-modification: 2023/12/17 21:42
+modification: 2023/12/18 15:46
 
 modifier: Cameron Bright
 
