@@ -1,16 +1,19 @@
 /*
-program versions : 4.0.0
+program versions : 4.1.0
 
 此分支[branch1]用于编写主程序
 
-Descrription: 此版本已能正常校准50uF-1nF，所有功能均实现
+Descrription: 此版本已能正常校准50uF-1nF，所有功能均已实现
 
 更新日志:
-此版本已能正常校准50uF-1nF
+1 此版本已能正常校准50uF-1nF
+2 修复了校准界面光标初始化的问题
+3 增加了详细的注释
 
 modification: 2023/12/18 15:46
 
-modifier: Cameron Bright
+modifier: Cameron
+https://github.com/CameronBright/Capacitance_Meter
 
 */
 
@@ -22,7 +25,11 @@ modifier: Cameron Bright
 #include "Relay.h"    //继电器头文件
 #include <stdio.h>
 
-sbit Buzzer = P2^3;//蜂鸣器 低电平工作
+//-------功能选择区--------
+#define BUZZER_SWITCH  1  //蜂鸣器 0关闭 1开启
+#define BREATH_LIGHT   0  //呼吸灯 0关闭 1开启
+
+//-------功能选择区--------
 
 void Timer0_Init(void);	//1毫秒@11.0592MHz
 void Delay(unsigned int delay); //定时器延时 
@@ -55,18 +62,17 @@ unsigned char cursor = 5; //光标
 
 unsigned char relay_index;  //继电器选择
 
-unsigned char password[6] = {'0','0','0','0','0','0'};
-//unsigned char password_true[6] = {'8','7','6','5','4','3'};
+unsigned char password_input[6] = {'0','0','0','0','0','0'};//密码输入
+unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
+//unsigned char password_true[6] = {'1','0','0','0','0','0'}; //正确密码
 
-unsigned char password_true[6] = {'1','0','0','0','0','0'}; //正确密码
-//unsigned char password_true[6] = {'8','7','6','5','4','3'}; //正确密码
 unsigned char password_for = 0; //index
 
 unsigned char adc_char;			//adc检测返回的char类型值
 float adc_float;						//adc检测返回的float类型值，就是具体的电压值
 
 xdata float relay_det_value[5] = 0; //relay0 relay1-4
-unsigned char relay_det_index = 0;
+unsigned char relay_det_index = 0;  //继电器选择
 
 xdata float cap_calibrations_input[5] = 0;//校准输入值
 xdata float cap_calibrations_value[5] = 0;//校准值
@@ -76,7 +82,9 @@ xdata float increments[] = {100, 10, 1, 0, 0.1, 0.01};//个位数+1、百位数+
 unsigned char calibrations = 0; //校准
 
 float cap_value;						//存放电容的容值
-char cap_units;    					//电容的单位0:uF、1:nF、 2:pF
+char cap_units;    					//电容的单位 0:uF、1:nF、 2:pF
+
+sbit Buzzer = P2^3;//蜂鸣器 低电平工作
 
 void main()
 {
@@ -84,9 +92,11 @@ void main()
 	LCD_Init(); //LCD函数初始化
 	ADC_Init(); //ADC函数初始化
 	
-	//Buzzer = 0;//蜂鸣器初始化
+	#if BUZZER_SWITCH
+		Buzzer = 0;//蜂鸣器初始化
+	#endif
 	
-	Relay_Control(0, 0);//继电器全关
+	Relay_Control(0, 0);//继电器初始化
 	
 	while(1)
 	{	
@@ -100,7 +110,7 @@ void main()
 
 void Lcd_Proc(void)     //LCD Dsiplay process function
 {
-	if(lcd_slow_down) return;   //200ms刷新一次
+	if(lcd_slow_down) return;   //200ms刷新一次屏幕
 		lcd_slow_down = 1;
 	
 	if(page == 0)            //测量界面 初始界面
@@ -118,16 +128,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_ShowChar(2,5,dispbuf[4]);
 		LCD_ShowChar(2,6,dispbuf[5]);
 		
-		sprintf((char *)dispbuf,"%06.2f",relay_det_value[0]);
-		LCD_ShowChar(2,10,dispbuf[0]);
-		LCD_ShowChar(2,11,dispbuf[1]);
-		LCD_ShowChar(2,12,dispbuf[2]);
-		LCD_ShowChar(2,13,dispbuf[3]);
-		LCD_ShowChar(2,14,dispbuf[4]);
-		LCD_ShowChar(2,15,dispbuf[5]);
-		
-		
-		switch(cap_units)
+		switch(cap_units) //显示单位
 		{
 			case 0:
 				LCD_ShowString(2,7,"uF");
@@ -148,7 +149,7 @@ void Lcd_Proc(void)     //LCD Dsiplay process function
 		LCD_WriteCommand(0x0f);//开光标
 		
 		LCD_ShowString(1,2,"Input Password");
-		LCD_ShowString(2,6,password);
+		LCD_ShowString(2,6,password_input);
 	}
 	else if(page == 2)       //密码错误页
 	{
@@ -223,25 +224,26 @@ void Key_Proc(void)
 	if(key_slow_down) return;   //10ms更新一次
 		key_slow_down = 1;
 	
-	key_value = Key_Read();
-	key_down = key_value & (key_value ^ key_old);
+	key_value = Key_Read(); 
+	key_down = key_value & (key_value ^ key_old); //消抖
 	key_up = ~key_value & (key_value ^ key_old);
 	key_old = key_value;
 
-	if(key_down)       //长按五秒
+	if(key_down)       //长按2秒
 		key_tick = 2000;
 	
 	if(key_old)
 	{
-		if(key_tick == 0)
+		if(key_tick == 0) //检测到长按进入校准页面
 			{
 				Lcd_Clear();
 				page = 1;
+				cursor = 5;
 				
 				//清空密码字符串
 				for(password_for = 0;password_for <= 5; password_for++)
 				{
-					password[password_for] = '0';
+					password_input[password_for] = '0';
 				}
 			}
 	}
@@ -259,9 +261,9 @@ void Key_Proc(void)
 			{
 				if(page == 1) 	//输密码页
 				{
-					password[cursor-5] += 1;  //按照光标位置加
-					if(password[cursor-5] > '9')
-						password[cursor-5] = '9';
+					password_input[cursor-5] += 1;  //按照光标位置加
+					if(password_input[cursor-5] > '9')
+						password_input[cursor-5] = '9';
 				}
 				else if(page == 5) //校准页
 				{
@@ -276,9 +278,9 @@ void Key_Proc(void)
 			{
 				if(page == 1)		//输密码页
 				{
-					password[cursor-5] -= 1; //按照光标位置减
-					if(password[cursor-5] == '/')
-						password[cursor-5] = '0';
+					password_input[cursor-5] -= 1; //按照光标位置减
+					if(password_input[cursor-5] == '/')
+						password_input[cursor-5] = '0';
 				}else if(page == 5)	//校准页
 				{
 					cap_calibrations_buf -= increments[cursor];
@@ -373,7 +375,7 @@ void Key_Proc(void)
 				else if(page == 1) //如果在输密码页，按下OK键确认密码
 				{
 					Lcd_Clear();
-					if(strncmp(password,password_true,6) == 0)
+					if(strncmp(password_input,password_true,6) == 0)
 						page = 3;
 					else
 						page = 2;
@@ -446,22 +448,24 @@ void Timer0_Isr(void) interrupt 1
 	if(delay_tick > 0) delay_tick--;//延时函数 会卡住当前函数
 	if(key_tick > 0) key_tick--;    //按键计时
 	
-	//呼吸灯 用于测试中断
-//	if(++led1_tick >= 1000)
-//	{
-//		LED1 ^= 1;
-//		led1_tick = 0;
-//	}
+	#if BREATH_LIGHT  //呼吸灯 用于测试中断	
+		if(++led1_tick >= 1000)
+		{
+			LED1 ^= 1;
+			led1_tick = 0;
+		}
+	#endif
 		
-	
-//	if(Buzzer == 0)
-//	{
-//		if(++buzzer_tick >= 500)
-//			{
-//				Buzzer = 1;
-//				buzzer_tick = 0;
-//			}
-//	}		
+	#if BUZZER_SWITCH
+		if(Buzzer == 0) //蜂鸣器
+		{
+			if(++buzzer_tick >= 500)
+				{
+					Buzzer = 1;
+					buzzer_tick = 0;
+				}
+		}	
+	#endif
 
 //---------继电器切换控制----------------------
 	if(page ==  4)
@@ -497,7 +501,6 @@ void Timer0_Isr(void) interrupt 1
 		}
 	}
 //---------继电器切换控制----------------------	
-	
 }
 
 void Delay(unsigned int delay) //定时器延时 会卡住当前函数，但不会影响整个代码
